@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Security.Cryptography.Certificates;
 
 // MoggInspectorLib v0.1
 // Use to calculate certain mogg security values, to check for PS3 errors
@@ -158,5 +159,107 @@ namespace MoggInspectorLib
         public bool _KeymaskMismatch = false; // this will be set to true if the keys don }t match, so the caller knows a patch is needed
         public bool _IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
 
+        private int Roll(int x)
+        {
+            return ((x + 0x13) % 0x20);
+        }
+
+        private void Swap(ref byte b1, ref byte b2)
+        {
+            byte tmp = b1;
+            b1 = b2;
+            b2 = tmp;
+        }
+        private byte[] Shuffle1(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                int o = Roll(i << 2);
+                Swap(ref key[o], ref key[(i * 4) + 2]);
+                o = Roll((i * 4) + 3);
+                Swap(ref key[o], ref key[(i * 4) + 1]);
+            }
+            return key;
+        }
+        private byte[] Shuffle2(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
+                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+            }
+            return key;
+        }
+        private byte[] Shuffle3(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                int o = Roll(((7 - i) * 4) + 1);
+                Swap(ref key[o], ref key[(i * 4) + 2]);
+                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+            }
+            return key;
+        }
+        private byte[] Shuffle4(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
+                int o = Roll((7 - i) * 4);
+                Swap(ref key[o], ref key[(i * 4) + 3]);
+            }
+            return key;
+        }
+        private byte[] Shuffle5(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                int o = Roll((i * 4) + 2);
+                Swap(ref key[((7 - i) * 4) + 1], ref key[o]);
+                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+            }
+            return key;
+        }
+        private byte[] Shuffle6(byte[] key)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
+                int o = Roll((i * 4) + 3);
+                Swap(ref key[(7 - i) * 4], ref key[o]);
+            }
+            return key;
+        }
+        private byte[] Supershuffle(byte[] key)
+        {
+            key = Shuffle1(key);
+            key = Shuffle2(key);
+            key = Shuffle3(key);
+            key = Shuffle4(key);
+            key = Shuffle5(key);
+            key = Shuffle6(key);
+            return key;
+        }
+        private byte[] Mash(byte[] key)
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                key[i] = (byte)(key[i] ^ _Masher[i]);
+            }
+            return key;
+        }
+        private byte[] RevealKey(byte[] key)
+        {
+            for (int i = 0; i < 14; i++)
+            { 
+                key = Supershuffle(key);
+            }
+            key = Mash(key);
+            return key;
+        }
+        public void DeriveKeys(byte[] header)
+        {
+
+        }
     }
 }
