@@ -15,20 +15,29 @@ using Microsoft.UI.Xaml;
 // Caller must provide the mogg header to the DeriveKeys method in a byte array, from byte 0 to the offset pointed to
 // by the LITTLE-ENDIAN 32-bit integer at mogg offset 4
 
-// DeriveKeys takes two arguments, the header byte array and a boolean, the boolean must be FALSE for almost all RB content, and
-// will be inert for v11 moggs
+// DeriveKeys takes two arguments, the header byte array and a boolean, the boolean must be FALSE for almost all RB
+// content. This will use the "green" HvKeys, and will be inert for v11 moggs
 
 // If the boolean argument is set to TRUE, it will use the "red" HvKeys that have been found in every game but that
 // no content we've ever seen actually uses
+
+// Recommended practice is to use the green keys, check for the known C3 mismatches, if none of those are found and
+// there is still a mismatch, save the contents of Ps3FixedMask and then run DeriveKeys again with the boolean set
+// to TRUE. If that results in a matching XboxAesKey and Ps3AesKey, then we have a "special" mogg that used the red
+// keys and thus was intended for purposes we're not sure of (potentially internal-only mogg encryption? all known
+// xbox 360 debug builds of milo like Dance Central use the green keys even though they're intended for use on a dev
+// kit). We don't really know much about the red keys, but we also don't want to inadvertently destroy them in the
+// process of looking for PS3 encryption issues. My UI frontend will use this algorithm. Only if the second check
+// (with the boolean set to TRUE) fails will you need to patch the mogg at offset Ps3KeyMaskOffset with Ps3FixedMask
 
 // Caller must then use the public variables to determine what UI to provide, and must handle keymask patching using
 // the returned value
 
 // The library will *not* do the patching for you, I don't want the DLL able to patch files itself
 
-// The library *will*, however, give you the offset you need to patch, in _Ps3KeyMaskOffset
+// The library *will*, however, give you the offset you need to patch, in Ps3KeyMaskOffset
 
-// _V17Keyset will not be defined if version is not 17
+// V17Keyset and V17KeysetOffset will not be defined if version is not 17
 
 // Values irrelevant to v11 moggs will not be defined when fed a v11 header
 
