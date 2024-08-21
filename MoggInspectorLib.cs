@@ -6,11 +6,31 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Security.Cryptography.Certificates;
 
+using System.Security.Cryptography;
+using Microsoft.UI.Xaml;
+
 // MoggInspectorLib v0.1
 // Use to calculate certain mogg security values, to check for PS3 errors
-// Caller must provide the mogg header to the DeriveKeys method in a byte array, from byte 0 to the offset pointed to by the LITTLE-ENDIAN 32-bit integer at mogg offset 4
-// Caller must then use the public variables to determine what UI to provide, and must handle keymask patching using the returned value
+
+// Caller must provide the mogg header to the DeriveKeys method in a byte array, from byte 0 to the offset pointed to
+// by the LITTLE-ENDIAN 32-bit integer at mogg offset 4
+
+// DeriveKeys takes two arguments, the header byte array and a boolean, the boolean must be FALSE for almost all RB content, and
+// will be inert for v11 moggs
+
+// If the boolean argument is set to TRUE, it will use the "red" HvKeys that have been found in every game but that
+// no content we've ever seen actually uses
+
+// Caller must then use the public variables to determine what UI to provide, and must handle keymask patching using
+// the returned value
+
 // The library will *not* do the patching for you, I don't want the DLL able to patch files itself
+
+// The library *will*, however, give you the offset you need to patch, in _Ps3KeyMaskOffset
+
+// _V17Keyset will not be defined if version is not 17
+
+// Values irrelevant to v11 moggs will not be defined when fed a v11 header
 
 // Useful offsets for moggheads:
 // 20+(_HeaderBlockSize*8) - Nonce offset, and base offset for many other values
@@ -35,7 +55,7 @@ namespace MoggInspectorLib
         private readonly byte[] _HvKey_16_r = new byte[16] { 0xa4, 0x2f, 0xf3, 0xe4, 0xe8, 0xfb, 0xa5, 0x9e, 0xac, 0x79, 0x01, 0x9e, 0xd5, 0x89, 0x66, 0xec };
         private readonly byte[] _HvKey_17_r = new byte[16] { 0x0b, 0x9c, 0x96, 0xce, 0xb6, 0xf0, 0xbc, 0xde, 0x4e, 0x9c, 0xd1, 0xc4, 0x1d, 0xeb, 0x7f, 0xe6 };
 
-        private readonly byte[,] _HiddenKeys = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys = new byte[12, 32] // pre-v17
             {
                 { 0x7f, 0x95, 0x5b, 0x9d, 0x94, 0xba, 0x12, 0xf1, 0xd7, 0x5a, 0x67, 0xd9, 0x16, 0x45, 0x28, 0xdd, 0x61, 0x55, 0x55, 0xaf, 0x23, 0x91, 0xd6, 0x0a, 0x3a, 0x42, 0x81, 0x18, 0xb4, 0xf7, 0xf3, 0x04 },
                 { 0x78, 0x96, 0x5d, 0x92, 0x92, 0xb0, 0x47, 0xac, 0x8f, 0x5b, 0x6d, 0xdc, 0x1c, 0x41, 0x7e, 0xda, 0x6a, 0x55, 0x53, 0xaf, 0x20, 0xc8, 0xdc, 0x0a, 0x66, 0x43, 0xdd, 0x1c, 0xb2, 0xa5, 0xa4, 0x0c },
@@ -50,7 +70,7 @@ namespace MoggInspectorLib
                 { 0x25, 0x93, 0x08, 0xc0, 0x9a, 0xbd, 0x10, 0xa2, 0xd6, 0x09, 0x60, 0x8f, 0x11, 0x1d, 0x7a, 0x8f, 0x63, 0x0b, 0x5d, 0xf2, 0x21, 0xec, 0xd7, 0x08, 0x62, 0x40, 0x84, 0x49, 0xb0, 0xad, 0xf2, 0x07 },
                 { 0x29, 0xc3, 0x0c, 0x96, 0x96, 0xeb, 0x10, 0xa0, 0xda, 0x59, 0x32, 0xd3, 0x17, 0x41, 0x25, 0xdc, 0x63, 0x08, 0x04, 0xae, 0x77, 0xcb, 0x84, 0x5a, 0x60, 0x4d, 0xdd, 0x45, 0xb5, 0xf4, 0xa0, 0x05 }
             };
-        private readonly byte[,] _HiddenKeys17_1 = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys17_1 = new byte[12, 32] // rb4
             {
                 { 0x4c, 0x22, 0xd9, 0x28, 0xa6, 0x23, 0x01, 0x62, 0x0a, 0x84, 0x86, 0x27, 0xbb, 0xcc, 0x88, 0x9e, 0x33, 0x3a, 0x6b, 0x23, 0x92, 0x22, 0xa2, 0xb4, 0x81, 0x64, 0x4e, 0x8d, 0x25, 0x69, 0x9f, 0xdc },
                 { 0x64, 0xf1, 0x5f, 0x54, 0xca, 0x70, 0xb8, 0x8b, 0xf8, 0xaa, 0x2a, 0xd3, 0xd9, 0xec, 0x3b, 0x49, 0xe8, 0x0a, 0x3e, 0xe3, 0x46, 0xb1, 0xbf, 0x27, 0x1b, 0x6c, 0x76, 0x11, 0xc8, 0x35, 0x7a, 0xb4 },
@@ -65,7 +85,7 @@ namespace MoggInspectorLib
                 { 0x04, 0xec, 0xc2, 0x82, 0x0e, 0x61, 0xab, 0xb3, 0x4b, 0x4c, 0x6c, 0x10, 0xe5, 0xfa, 0x8f, 0xc7, 0xdd, 0xa5, 0x45, 0x16, 0x5c, 0x37, 0xcf, 0x70, 0xe9, 0xfe, 0x5d, 0x9b, 0xe6, 0xb2, 0xa5, 0x85 },
                 { 0xb3, 0xcc, 0x1c, 0xaa, 0x9a, 0x16, 0x32, 0xe7, 0x0c, 0x41, 0xc0, 0xbd, 0x70, 0x1e, 0xbc, 0x72, 0x17, 0xcb, 0x04, 0x6b, 0x14, 0x00, 0x13, 0xb6, 0x37, 0x33, 0xa3, 0xb7, 0xd3, 0xdd, 0xc9, 0x1a }
             };
-        private readonly byte[,] _HiddenKeys17_4 = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys17_4 = new byte[12, 32] // dropmix
             {
                 { 0x53, 0xb6, 0x2e, 0xf4, 0xe7, 0xec, 0x46, 0x0a, 0xd2, 0xa7, 0x9a, 0xb7, 0x6f, 0x00, 0xb6, 0xe8, 0x04, 0x6d, 0x28, 0xd0, 0xf3, 0xaf, 0xa6, 0x5d, 0xe5, 0x27, 0xb9, 0x06, 0xb6, 0x69, 0xa2, 0xd6 },
                 { 0x1b, 0xf1, 0x33, 0x88, 0xc6, 0xce, 0x99, 0xf8, 0x72, 0x3a, 0x39, 0x94, 0xdc, 0x59, 0x74, 0x9c, 0x41, 0x91, 0x65, 0xc9, 0x55, 0xd6, 0x4c, 0xa6, 0x52, 0x05, 0xd7, 0xab, 0xe9, 0xda, 0x3d, 0x5c },
@@ -80,7 +100,7 @@ namespace MoggInspectorLib
                 { 0x40, 0x2f, 0x93, 0x66, 0x9b, 0xee, 0x29, 0x5c, 0x91, 0xcf, 0xa6, 0xad, 0x47, 0x63, 0x01, 0x87, 0x51, 0x6c, 0xe8, 0x29, 0x55, 0x68, 0x5e, 0x11, 0xc2, 0x48, 0x23, 0x96, 0x05, 0x78, 0xb3, 0xa1 },
                 { 0x8f, 0xfb, 0x7e, 0xad, 0x69, 0x6a, 0x24, 0xcd, 0x03, 0x97, 0xca, 0xb8, 0x48, 0x39, 0xf6, 0xdd, 0x56, 0x80, 0x61, 0xe7, 0x66, 0xee, 0x5c, 0x55, 0xd1, 0x52, 0x57, 0xce, 0xd2, 0xc0, 0xbe, 0xc1 }
             };
-        private readonly byte[,] _HiddenKeys17_6 = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys17_6 = new byte[12, 32] // dcvr
             {
                 { 0x35, 0xb3, 0xda, 0x45, 0x95, 0xd2, 0x5c, 0x4e, 0x65, 0x01, 0x5f, 0x84, 0x61, 0x61, 0x6a, 0x08, 0xb0, 0x0d, 0x41, 0xd3, 0xa7, 0xf4, 0xb8, 0xa1, 0x78, 0x08, 0xe2, 0x75, 0x29, 0x1e, 0xfe, 0x8d },
                 { 0x18, 0x9a, 0x4c, 0x81, 0x2e, 0x8a, 0x6d, 0x40, 0x17, 0xec, 0x55, 0x1b, 0x4b, 0x39, 0x28, 0x84, 0x63, 0x69, 0xc3, 0x6b, 0x24, 0x30, 0x71, 0x00, 0xcd, 0x0e, 0xdd, 0xda, 0xa1, 0xfa, 0x1b, 0xb9 },
@@ -95,7 +115,7 @@ namespace MoggInspectorLib
                 { 0x7b, 0xd5, 0x0c, 0x35, 0xe3, 0x62, 0xe4, 0x3b, 0xee, 0x23, 0x30, 0x9e, 0x61, 0x70, 0xbe, 0xbf, 0x8f, 0xa7, 0x4b, 0xed, 0x97, 0x3b, 0xd1, 0xcb, 0xdd, 0xd2, 0x0b, 0xe5, 0xe1, 0xb9, 0xe6, 0x52 },
                 { 0x69, 0xa9, 0x4b, 0x0f, 0x1c, 0x58, 0xcb, 0x77, 0xe2, 0x12, 0xea, 0x94, 0xdf, 0x47, 0x3f, 0x53, 0x26, 0xba, 0x0e, 0x6e, 0x09, 0xc3, 0xb2, 0x22, 0x68, 0xdd, 0x4c, 0x5c, 0xfd, 0x66, 0x86, 0x73 }
             };
-        private readonly byte[,] _HiddenKeys17_8 = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys17_8 = new byte[12, 32] // audica
             {
                 { 0x9e, 0xdf, 0xa5, 0xbb, 0x02, 0xca, 0x0c, 0x2b, 0x51, 0x02, 0x1a, 0x35, 0x11, 0x62, 0x8a, 0x0f, 0x66, 0x31, 0x6e, 0x73, 0x0a, 0x68, 0x5f, 0x55, 0xe0, 0x51, 0x4f, 0x73, 0x50, 0x53, 0xb4, 0x9c },
                 { 0x98, 0x3a, 0xfa, 0x87, 0x4c, 0x44, 0x70, 0xa8, 0x15, 0xe4, 0x5a, 0x85, 0x73, 0xae, 0x1a, 0x32, 0x26, 0x63, 0x28, 0x11, 0x4d, 0x80, 0x73, 0xab, 0x3d, 0x86, 0x9c, 0x03, 0x99, 0xac, 0x10, 0x1a },
@@ -110,7 +130,7 @@ namespace MoggInspectorLib
                 { 0x36, 0x00, 0x3f, 0x13, 0xa0, 0x7a, 0xb6, 0x02, 0x86, 0x4d, 0xc2, 0x70, 0x19, 0x1f, 0xd1, 0xd9, 0x8e, 0x0b, 0x64, 0x4a, 0xf2, 0xc6, 0xeb, 0xb5, 0x1c, 0x14, 0x6c, 0xc0, 0x54, 0xd3, 0x69, 0x5c },
                 { 0x00, 0xb1, 0xa8, 0x7f, 0xa2, 0x91, 0xad, 0x8e, 0x08, 0xf6, 0xc9, 0x03, 0x71, 0xa9, 0x74, 0x64, 0x66, 0xde, 0x4e, 0x02, 0x08, 0x35, 0x39, 0x40, 0x9c, 0x75, 0x10, 0x0d, 0x9d, 0x61, 0x7f, 0x63 }
             };
-        private readonly byte[,] _HiddenKeys17_10 = new byte[12, 32]
+        private readonly byte[,] _HiddenKeys17_10 = new byte[12, 32] // fuser
             {
                 { 0xfe, 0x0e, 0x46, 0xa5, 0x59, 0x14, 0x7c, 0x30, 0xb4, 0x6a, 0x42, 0xcb, 0x75, 0x71, 0xbb, 0xcd, 0xd8, 0xc3, 0x20, 0xdc, 0x2e, 0xf7, 0x02, 0x8b, 0x03, 0x36, 0x43, 0x96, 0xaf, 0xde, 0x2d, 0x71 },
                 { 0xaf, 0xa3, 0xf3, 0x3b, 0xdb, 0x8f, 0xe2, 0xf5, 0x96, 0x45, 0x8a, 0x37, 0xed, 0xb9, 0xab, 0x18, 0x1f, 0xb2, 0xdd, 0x75, 0xa6, 0x2a, 0x66, 0xe6, 0xc4, 0xc1, 0x44, 0xf4, 0x78, 0x15, 0x9f, 0x38 },
@@ -133,31 +153,32 @@ namespace MoggInspectorLib
         private readonly byte[] _C3v13FixedPs3Mask = new byte[16] { 0xa5, 0xce, 0xfd, 0x06, 0x11, 0x93, 0x23, 0x21, 0xf8, 0x87, 0x85, 0xea, 0x95, 0xe4, 0x94, 0xd4 };
         private readonly byte[] _C3v11Nonce = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x63, 0x33, 0x2d, 0x63, 0x75, 0x73, 0x74, 0x6F, 0x6D, 0x73, 0x31, 0x34 };
 
-        public uint _Version; // read from bytes 0-3 of the header
-        private uint _OggOffset; // read from bytes 4-7 of the header
-        private uint _HeaderBlockSize; // read from bytes 16-19 of the header
-        private uint _NonceOffset; // calculated from 20+(_HeaderBlockSize*8)
-        private uint _MagicAOffset; // calculated from _NonceOffset+16
-        private uint _MagicBOffset; // calculated from _NonceOffset+24
-        private uint _Ps3MaskOffset; // calculated from _NonceOffset+32
-        private uint _XboxMaskOffset; // calculated from _NonceOffset+48
-        private uint _KeyIndexOffset; // calculated from _NonceOffset+64 if v12-v16, _NonceOffset+72 if v17
-        private uint _V17KeysetOffset; // calculated from _NonceOffset+64
-        public uint _V17Keyset; // read from the eight bytes at _V17KeysetOffset, *only* if _Version is 17
+        public uint Version; // read from bytes 0-3 of the header
+        public uint OggOffset; // read from bytes 4-7 of the header
+        public uint HeaderBlockSize; // read from bytes 16-19 of the header
+        public uint NonceOffset; // calculated from 20+(HeaderBlockSize*8)
+        public uint MagicAOffset; // calculated from NonceOffset+16
+        public uint MagicBOffset; // calculated from NonceOffset+24
+        public uint Ps3MaskOffset; // calculated from NonceOffset+32
+        public uint XboxMaskOffset; // calculated from NonceOffset+48
+        public byte[] HvKey = new byte[16]; // used to store the needed hvkey
+        public uint KeyIndexOffset; // calculated from NonceOffset+64 if v12-v16, NonceOffset+72 if v17
+        public uint V17KeysetOffset; // calculated from NonceOffset+64
+        public ulong V17Keyset; // read from the eight bytes at V17KeysetOffset, *only* if Version is 17
 
-        public ulong _MagicA; // this is used to xor a specific offset in the decrypted audio as a form of obfuscation
-        public ulong _MagicB; // this is used to xor a different specific offset in the decrypted audio
-        public uint _Ps3Index; // this is the key index into the _HiddenKeys array as read from the header, HMX games always take the stored value and modulo 6
-        public uint _XboxIndex; // this is _Ps3Index + 6
-        public byte[] _XboxAesKey = new byte[16]; // this will hold the final derived xbox key
-        public byte[] _Ps3AesKey = new byte[16]; // this will hold the final derived ps3 key
-        public byte[] _Nonce = new byte[16]; // normally used as read, this is the IV for the AES CTR encryption so we just document it
-        public byte[] _Ps3Mask = new byte[16]; // used directly, no encryption
-        public byte[] _XboxMask = new byte[16]; // as read from the header, this is encrypted with the appropriate _HvKey
-        public byte[] _Ps3GrindArrayResult = new byte[16]; // this is kept so we can xor it with the xbox key to get the correct ps3 keymask
-        public byte[] _Ps3FixedMask = new byte[16]; // used only when _XboxAesKey and _Ps3AesKey don't match, is _XboxAesKey XOR _Ps3GrindArrayResult
-        public bool _KeymaskMismatch = false; // this will be set to true if the keys don }t match, so the caller knows a patch is needed
-        public bool _IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
+        public byte[] MagicA = new byte[8]; // this is used to xor a specific offset in the decrypted audio as a form of obfuscation
+        public byte[] MagicB = new byte[8]; // this is used to xor a different specific offset in the decrypted audio
+        public uint Ps3Index; // this is the key index into the _HiddenKeys array as read from the header, HMX games always take the stored value and modulo 6
+        public uint XboxIndex; // this is Ps3Index + 6
+        public byte[] XboxAesKey = new byte[16]; // this will hold the final derived xbox key
+        public byte[] Ps3AesKey = new byte[16]; // this will hold the final derived ps3 key
+        public byte[] Nonce = new byte[16]; // normally used as read, this is the IV for the AES CTR encryption so we just document it
+        public byte[] Ps3Mask = new byte[16]; // used directly, no encryption
+        public byte[] XboxMask = new byte[16]; // as read from the header, this is encrypted with the appropriate _HvKey
+        public byte[] Ps3GrindArrayResult = new byte[16]; // this is kept so we can xor it with the xbox key to get the correct ps3 keymask
+        public byte[] Ps3FixedMask = new byte[16]; // used only when XboxAesKey and Ps3AesKey don't match, is XboxAesKey XOR Ps3GrindArrayResult
+        public bool KeymaskMismatch = false; // this will be set to true if the keys don't match, so the caller knows a patch is needed
+        public bool IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
 
         private int Roll(int x)
         {
@@ -257,8 +278,142 @@ namespace MoggInspectorLib
             key = Mash(key);
             return key;
         }
-        public void DeriveKeys(byte[] header)
+        private ulong GetUInt64LE(byte[] bytes, uint offset)
         {
+            byte[] temp = new byte[8];
+            temp[0] = bytes[offset];
+            temp[1] = bytes[offset + 1];
+            temp[2] = bytes[offset + 2];
+            temp[3] = bytes[offset + 3];
+            temp[4] = bytes[offset + 4];
+            temp[5] = bytes[offset + 5];
+            temp[6] = bytes[offset + 6];
+            temp[7] = bytes[offset + 7];
+            if (! BitConverter.IsLittleEndian)
+                Array.Reverse(temp);
+            ulong i = BitConverter.ToUInt64(temp, 0);
+            return i;
+        }
+        private uint GetUInt32LE(byte[] bytes, uint offset)
+        {
+            byte[] temp = new byte[4];
+            temp[0] = bytes[offset];
+            temp[1] = bytes[offset + 1];
+            temp[2] = bytes[offset + 2];
+            temp[3] = bytes[offset + 3];
+            if (! BitConverter.IsLittleEndian)
+                Array.Reverse(temp);
+            uint i = BitConverter.ToUInt32(temp, 0);
+            return i;
+        }
+        public void ReadValues(byte[] header, bool red)
+        {
+            Version = GetUInt32LE(header, 0);
+            OggOffset = GetUInt32LE(header, 4);
+            HeaderBlockSize = GetUInt32LE(header, 16);
+            NonceOffset = 20 + (HeaderBlockSize * 8);
+            if (Version > 11)
+            {
+                MagicAOffset = NonceOffset + 16;
+                MagicBOffset = NonceOffset + 24;
+                Ps3MaskOffset = NonceOffset + 32;
+                XboxMaskOffset = NonceOffset + 48;
+                if (Version == 17)
+                {
+                    V17KeysetOffset = NonceOffset + 64;
+                    KeyIndexOffset = NonceOffset + 72;
+                    V17Keyset = GetUInt64LE(header, V17KeysetOffset);
+                }
+                else
+                {
+                    KeyIndexOffset = NonceOffset + 64;
+                }
+                Ps3Index = (GetUInt32LE(header, KeyIndexOffset)) % 6;
+                XboxIndex = Ps3Index + 6;
+            }
+
+            Array.Copy(header, NonceOffset, Nonce, 0, 16);
+            if (Version > 11)
+            {
+                Array.Copy(header, MagicAOffset, MagicA, 0, 8);
+                Array.Copy(header, MagicBOffset, MagicB, 0, 8);
+                Array.Copy(header, Ps3MaskOffset, Ps3Mask, 0, 16);
+                Array.Copy(header, XboxMaskOffset, XboxMask, 0, 16);
+            }
+
+            if (Version > 11)
+            {
+                if (red)
+                {
+                    switch (Version)
+                    {
+                        case 12:
+                            HvKey = _HvKey_12_r;
+                            break;
+                        case 13:
+                            HvKey = _HvKey_12_r;
+                            break;
+                        case 14:
+                            HvKey = _HvKey_14_r;
+                            break;
+                        case 15:
+                            HvKey = _HvKey_15_r;
+                            break;
+                        case 16:
+                            HvKey = _HvKey_16_r;
+                            break;
+                        case 17:
+                            HvKey = _HvKey_17_r;
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (Version)
+                    {
+                        case 12:
+                            HvKey = _HvKey_12;
+                            break;
+                        case 13:
+                            HvKey = _HvKey_12;
+                            break;
+                        case 14:
+                            HvKey = _HvKey_14;
+                            break;
+                        case 15:
+                            HvKey = _HvKey_15;
+                            break;
+                        case 16:
+                            HvKey = _HvKey_16;
+                            break;
+                        case 17:
+                            HvKey = _HvKey_17;
+                            break;
+                    }
+                }
+
+
+                using (Aes _XboxMaskCipher = Aes.Create())
+                {
+                    _XboxMaskCipher.Key = HvKey;
+                    _XboxMaskCipher.Mode = CipherMode.ECB;
+                    using (ICryptoTransform decryptor = _XboxMaskCipher.CreateDecryptor())
+                    {
+                        XboxMask = decryptor.TransformFinalBlock(XboxMask, 0, XboxMask.Length);
+                    }
+                }
+            }
+        }
+        public void DeriveKeys(byte[] header, bool red)
+        {
+            if (red)
+            {
+                ReadValues(header, true);
+            }
+            else
+            {
+                ReadValues(header, false);
+            }
 
         }
     }
