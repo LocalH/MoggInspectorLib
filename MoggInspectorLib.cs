@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 using Windows.Security.Cryptography.Certificates;
 
 using System.Security.Cryptography;
-using Microsoft.UI.Xaml;
-using Windows.Devices.SmartCards;
-using System.ComponentModel.Design;
 
 // MoggInspectorLib v0.1
 // Use to calculate certain mogg security values, to check for PS3 errors
