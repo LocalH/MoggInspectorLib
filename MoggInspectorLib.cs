@@ -8,6 +8,8 @@ using Windows.Security.Cryptography.Certificates;
 
 using System.Security.Cryptography;
 using Microsoft.UI.Xaml;
+using Windows.Devices.SmartCards;
+using System.ComponentModel.Design;
 
 // MoggInspectorLib v0.1
 // Use to calculate certain mogg security values, to check for PS3 errors
@@ -189,6 +191,76 @@ namespace MoggInspectorLib
         public bool KeymaskMismatch = false; // this will be set to true if the keys don't match, so the caller knows a patch is needed
         public bool IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
 
+        private void GenKeys()
+        {
+
+        }
+        private byte AsciiDigitToHex(byte h)
+        {
+            if ((h < 0x61) || (0x66 < h))
+                if ((h < 0x41) || (0x46 < h))
+                {
+                    h = (byte)(h - 0x30);
+                    if (h < 0)
+                    {
+                        h = (byte)(h + 0x100);
+                    }
+                }
+                else
+                {
+                    h = (byte)(h - 0x37);
+                    if (h < 0)
+                    {
+                        h = (byte)(h + 0x100);
+                    }
+                }
+            else
+            {
+                h = (byte)(h - 0x57);
+                if (h < 0)
+                {
+                    h = (byte)(h + 0x100);
+                }
+            }
+            return h;
+        }
+        private byte[] HexStringToBytes(byte[] s)
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                byte lo = AsciiDigitToHex(s[i * 2 + 1]);
+                byte hi = AsciiDigitToHex(s[i * 2]);
+                s[i] = (byte)((lo + (hi * 16)) & 0xff);
+            }
+            return s;
+        }
+        private uint Lcg(uint x)
+        {
+            return ((x * 0x19660d) + 0x3c6ef35f) & 0xffffffff;
+        }
+        private byte RotL(byte x, byte n)
+        {
+            return (byte)((x << (n & 31) | x >> (8 - n & 31)) & 255);
+        }
+        private byte RotR(byte x, byte n)
+        {
+            return (byte)((x >> (n & 31) | x << (8 - n & 31)) & 255);
+        }
+        private byte Onot(byte x)
+        {
+            if (x == 0)
+            { return 1; }
+            else
+            { return 0; }
+        }
+        private void Op(ref byte a1, ref byte a2, byte op)
+        {
+
+        }
+        private byte[] GrindArray(byte[] key)
+        {
+            return key;
+        }
         private int Roll(int x)
         {
             return ((x + 0x13) % 0x20);
@@ -410,6 +482,20 @@ namespace MoggInspectorLib
                     {
                         XboxMask = decryptor.TransformFinalBlock(XboxMask, 0, XboxMask.Length);
                     }
+                }
+                if ((Ps3Mask == _C3v12BadPs3Mask) || (Ps3Mask == _C3v13BadPs3Mask))
+                {
+                    IsC3Mogg = true;
+                    KeymaskMismatch = true;
+                }
+                if ((Ps3Mask == _C3v12FixedPs3Mask) || (Ps3Mask == _C3v13FixedPs3Mask))
+                {
+                    IsC3Mogg = true;
+                    KeymaskMismatch = false;
+                }
+                if (Nonce == _C3v11Nonce)
+                {
+                    IsC3Mogg = true;
                 }
             }
         }
