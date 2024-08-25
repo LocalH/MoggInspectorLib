@@ -403,7 +403,7 @@ namespace MoggInspectorLib
                     }
                 case 28:
                     {
-                        ret = Op((byte)((~a1)^0xff), a2, 24);
+                        ret = Op((byte)((~a1)&0xff), a2, 24);
                         break;
                     }
                 case 29:
