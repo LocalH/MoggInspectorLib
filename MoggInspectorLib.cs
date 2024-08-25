@@ -250,9 +250,179 @@ namespace MoggInspectorLib
             else
             { return 0; }
         }
-        private void Op(ref byte a1, ref byte a2, byte op)
+        private byte Op(byte a1, byte a2, byte op)
         {
-
+            byte ret = 0;
+            switch (op)
+            {
+                case 0:
+                    {
+                        ret = (byte)(a2 + RotR(a1, Onot(a2)));
+                        break;
+                    }
+                case 1:
+                    {
+                        ret = (byte)(a2 + RotR(a1, 3));
+                        break;
+                    }
+                case 2:
+                    {
+                        ret = (byte)(a2 + RotL(a1, 1));
+                        break;
+                    }
+                case 3:
+                    {
+                        ret = (byte)(a2 ^ (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                        break;
+                    }
+                case 4:
+                    {
+                        ret = (byte)(a2 ^ RotL(a1, 4));
+                        break;
+                    }
+                case 5:
+                    {
+                        ret = (byte)(a2 + (a2 ^ RotR(a1, 3)));
+                        break;
+                    }
+                case 6:
+                    {
+                        ret = (byte)(a2 + RotL(a1, 2));
+                        break;
+                    }
+                case 7:
+                    {
+                        ret = (byte)(a2 + Onot(a1));
+                        break;
+                    }
+                case 8:
+                    {
+                        ret = (byte)(a2 ^ RotR(a1, Onot(a2)));
+                        break;
+                    }
+                case 9:
+                    {
+                        ret = (byte)(a2 ^ (a2 + RotL(a1, 3)));
+                        break;
+                    }
+                case 10:
+                    {
+                        ret = (byte)(a2 + RotL(a1, 3));
+                        break;
+                    }
+                case 11:
+                    {
+                        ret = (byte)(a2 + RotL(a1, 4));
+                        break;
+                    }
+                case 12:
+                    {
+                        ret = (byte)(a1 ^ a2);
+                        break;
+                    }
+                case 13:
+                    {
+                        ret = (byte)(a2 ^ Onot(a1));
+                        break;
+                    }
+                case 14:
+                    {
+                        ret = (byte)(a2 ^ (a2 + RotR(a1, 3)));
+                        break;
+                    }
+                case 15:
+                    {
+                        ret = (byte)(a2 ^ RotL(a1, 3));
+                        break;
+                    }
+                case 16:
+                    {
+                        ret = (byte)(a2 ^ RotL(a1, 2));
+                        break;
+                    }
+                case 17:
+                    {
+                        ret = (byte)(a2 + (a2 ^ RotL(a1, 3)));
+                        break;
+                    }
+                case 18:
+                    {
+                        ret = (byte)(a2 + (a1 ^ a2));
+                        break;
+                    }
+                case 19:
+                    {
+                        ret = (byte)(a1 + a2);
+                        break;
+                    }
+                case 20:
+                    {
+                        ret = (byte)(a2 ^ RotR(a1, 3));
+                        break;
+                    }
+                case 21:
+                    {
+                        ret = (byte)(a2 ^ (a1 + a2));
+                        break;
+                    }
+                case 22:
+                    {
+                        ret = (byte)(RotR(a1, Onot(a2)));
+                        break;
+                    }
+                case 23:
+                    {
+                        ret = (byte)(a2 + RotR(a1, 1));
+                        break;
+                    }
+                case 24:
+                    {
+                        ret = (byte)(a1 >> (a2 & 7 & 31) | a1 << (-a2 & 7 & 31));
+                        break;
+                    }
+                case 25:
+                    {
+                        if (a1 == 0)
+                            if (a2 == 0)
+                                ret = 128;
+                            else
+                                ret = 1;
+                        else
+                            ret = 0;
+                        break;
+                    }
+                case 26:
+                    {
+                        ret = (byte)(a2 + RotR(a1, 2));
+                        break;
+                    }
+                case 27:
+                    {
+                        ret = (byte)(a2 ^ RotR(a1, 1));
+                        break;
+                    }
+                case 28:
+                    {
+                        ret = Op((byte)((~a1)^0xff), a2, 24);
+                        break;
+                    }
+                case 29:
+                    {
+                        ret = (byte)(a2 ^ RotR(a1, 2));
+                        break;
+                    }
+                case 30:
+                    {
+                        ret = (byte)(a2 + (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                        break;
+                    }
+                case 31:
+                    {
+                        ret = (byte)(a2 ^ RotL(a1, 1));
+                        break;
+                    }
+            }
+            return (byte)(ret & 0xff);
         }
         private byte[] GrindArray(byte[] key)
         {
