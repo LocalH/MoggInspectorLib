@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Generic;
+/* using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Security.Cryptography.Certificates;
+*/
 
 using System.Security.Cryptography;
 
@@ -12,7 +13,7 @@ using System.Security.Cryptography;
 // Use to calculate certain mogg security values, to check for PS3 errors
 
 // Caller must provide the mogg header to the DeriveKeys method in a byte array, from byte 0 to the offset pointed to
-// by the LITTLE-ENDIAN 32-bit integer at mogg offset 4
+// by the LITTLE-ENDIAN 32-bit integer at mogg offset 4, noninclusive
 
 // DeriveKeys takes two arguments, the header byte array and a boolean, the boolean must be FALSE for almost all RB
 // content. This will use the "green" HvKeys, and will be inert for v11 moggs
@@ -45,23 +46,23 @@ using System.Security.Cryptography;
 
 namespace MoggInspectorLib
 {
-    public class Get
+    public class KeyChain
     {
-        private readonly byte[] _Masher = new byte[32] { 0x39, 0xa2, 0xbf, 0x53, 0x7d, 0x88, 0x1d, 0x03, 0x35, 0x38, 0xa3, 0x80, 0x45, 0x24, 0xee, 0xca, 0x25, 0x6d, 0xa5, 0xc2, 0x65, 0xa9, 0x94, 0x73, 0xe5, 0x74, 0xeb, 0x54, 0xe5, 0x95, 0x3f, 0x1c };
+        private readonly byte[] _Masher = [0x39, 0xa2, 0xbf, 0x53, 0x7d, 0x88, 0x1d, 0x03, 0x35, 0x38, 0xa3, 0x80, 0x45, 0x24, 0xee, 0xca, 0x25, 0x6d, 0xa5, 0xc2, 0x65, 0xa9, 0x94, 0x73, 0xe5, 0x74, 0xeb, 0x54, 0xe5, 0x95, 0x3f, 0x1c];
 
-        private readonly byte[] _CtrKey_11 = new byte[16] { 0x37, 0xb2, 0xe2, 0xb9, 0x1c, 0x74, 0xfa, 0x9e, 0x38, 0x81, 0x08, 0xea, 0x36, 0x23, 0xdb, 0xe4 };
+        private readonly byte[] _CtrKey_11 = [0x37, 0xb2, 0xe2, 0xb9, 0x1c, 0x74, 0xfa, 0x9e, 0x38, 0x81, 0x08, 0xea, 0x36, 0x23, 0xdb, 0xe4];
 
-        private readonly byte[] _HvKey_12 = new byte[16] { 0x01, 0x22, 0x00, 0x38, 0xd2, 0x01, 0x78, 0x8b, 0xdd, 0xcd, 0xd0, 0xf0, 0xfe, 0x3e, 0x24, 0x7f };
-        private readonly byte[] _HvKey_14 = new byte[16] { 0x51, 0x73, 0xad, 0xe5, 0xb3, 0x99, 0xb8, 0x61, 0x58, 0x1a, 0xf9, 0xb8, 0x1e, 0xa7, 0xbe, 0xbf };
-        private readonly byte[] _HvKey_15 = new byte[16] { 0xc6, 0x22, 0x94, 0x30, 0xd8, 0x3c, 0x84, 0x14, 0x08, 0x73, 0x7c, 0xf2, 0x23, 0xf6, 0xeb, 0x5a };
-        private readonly byte[] _HvKey_16 = new byte[16] { 0x02, 0x1a, 0x83, 0xf3, 0x97, 0xe9, 0xd4, 0xb8, 0x06, 0x74, 0x14, 0x6b, 0x30, 0x4c, 0x00, 0x91 };
-        private readonly byte[] _HvKey_17 = new byte[16] { 0x42, 0x66, 0x37, 0xb3, 0x68, 0x05, 0x9f, 0x85, 0x6e, 0x96, 0xbd, 0x1e, 0xf9, 0x0e, 0x7f, 0xbd };
+        private readonly byte[] _HvKey_12 = [0x01, 0x22, 0x00, 0x38, 0xd2, 0x01, 0x78, 0x8b, 0xdd, 0xcd, 0xd0, 0xf0, 0xfe, 0x3e, 0x24, 0x7f];
+        private readonly byte[] _HvKey_14 = [0x51, 0x73, 0xad, 0xe5, 0xb3, 0x99, 0xb8, 0x61, 0x58, 0x1a, 0xf9, 0xb8, 0x1e, 0xa7, 0xbe, 0xbf];
+        private readonly byte[] _HvKey_15 = [0xc6, 0x22, 0x94, 0x30, 0xd8, 0x3c, 0x84, 0x14, 0x08, 0x73, 0x7c, 0xf2, 0x23, 0xf6, 0xeb, 0x5a];
+        private readonly byte[] _HvKey_16 = [0x02, 0x1a, 0x83, 0xf3, 0x97, 0xe9, 0xd4, 0xb8, 0x06, 0x74, 0x14, 0x6b, 0x30, 0x4c, 0x00, 0x91];
+        private readonly byte[] _HvKey_17 = [0x42, 0x66, 0x37, 0xb3, 0x68, 0x05, 0x9f, 0x85, 0x6e, 0x96, 0xbd, 0x1e, 0xf9, 0x0e, 0x7f, 0xbd];
 
-        private readonly byte[] _HvKey_12_r = new byte[16] { 0xf7, 0xb6, 0xc2, 0x22, 0xb6, 0x66, 0x5b, 0xd5, 0x6c, 0xe0, 0x7d, 0x6c, 0x8a, 0x46, 0xdb, 0x18 };
-        private readonly byte[] _HvKey_14_r = new byte[16] { 0x60, 0xad, 0x83, 0x0b, 0xc2, 0x2f, 0x82, 0xc5, 0xcb, 0xbf, 0xf4, 0x3d, 0x60, 0x52, 0x7e, 0x33 };
-        private readonly byte[] _HvKey_15_r = new byte[16] { 0x6c, 0x68, 0x55, 0x98, 0x5b, 0x12, 0x21, 0x41, 0xe7, 0x85, 0x35, 0xca, 0x19, 0xe1, 0x9a, 0xf3 };
-        private readonly byte[] _HvKey_16_r = new byte[16] { 0xa4, 0x2f, 0xf3, 0xe4, 0xe8, 0xfb, 0xa5, 0x9e, 0xac, 0x79, 0x01, 0x9e, 0xd5, 0x89, 0x66, 0xec };
-        private readonly byte[] _HvKey_17_r = new byte[16] { 0x0b, 0x9c, 0x96, 0xce, 0xb6, 0xf0, 0xbc, 0xde, 0x4e, 0x9c, 0xd1, 0xc4, 0x1d, 0xeb, 0x7f, 0xe6 };
+        private readonly byte[] _HvKey_12_r = [0xf7, 0xb6, 0xc2, 0x22, 0xb6, 0x66, 0x5b, 0xd5, 0x6c, 0xe0, 0x7d, 0x6c, 0x8a, 0x46, 0xdb, 0x18];
+        private readonly byte[] _HvKey_14_r = [0x60, 0xad, 0x83, 0x0b, 0xc2, 0x2f, 0x82, 0xc5, 0xcb, 0xbf, 0xf4, 0x3d, 0x60, 0x52, 0x7e, 0x33];
+        private readonly byte[] _HvKey_15_r = [0x6c, 0x68, 0x55, 0x98, 0x5b, 0x12, 0x21, 0x41, 0xe7, 0x85, 0x35, 0xca, 0x19, 0xe1, 0x9a, 0xf3];
+        private readonly byte[] _HvKey_16_r = [0xa4, 0x2f, 0xf3, 0xe4, 0xe8, 0xfb, 0xa5, 0x9e, 0xac, 0x79, 0x01, 0x9e, 0xd5, 0x89, 0x66, 0xec];
+        private readonly byte[] _HvKey_17_r = [0x0b, 0x9c, 0x96, 0xce, 0xb6, 0xf0, 0xbc, 0xde, 0x4e, 0x9c, 0xd1, 0xc4, 0x1d, 0xeb, 0x7f, 0xe6];
 
         private readonly byte[,] _HiddenKeys = new byte[12, 32] // pre-v17
             {
@@ -155,11 +156,11 @@ namespace MoggInspectorLib
         };
 
         // These are here more for documentation than anything as the method will run the derivations regardless, but will enable detection of these moggs so the caller can display appropriate UI
-        private readonly byte[] _C3v12BadPs3Mask = new byte[16] { 0x6c, 0x6c, 0x65, 0x63, 0x74, 0x69, 0x76, 0x65, 0x2d, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2d, 0x62 };
-        private readonly byte[] _C3v13BadPs3Mask = new byte[16] { 0xc3, 0xc3, 0xc3, 0xc3, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b };
-        private readonly byte[] _C3v12FixedPs3Mask = new byte[16] { 0xf1, 0xb4, 0xb8, 0xb0, 0x48, 0xaf, 0xcb, 0x9b, 0x4b, 0x53, 0xe0, 0x56, 0x64, 0x57, 0x68, 0x39 };
-        private readonly byte[] _C3v13FixedPs3Mask = new byte[16] { 0xa5, 0xce, 0xfd, 0x06, 0x11, 0x93, 0x23, 0x21, 0xf8, 0x87, 0x85, 0xea, 0x95, 0xe4, 0x94, 0xd4 };
-        private readonly byte[] _C3v11Nonce = new byte[16] { 0x00, 0x00, 0x00, 0x00, 0x63, 0x33, 0x2d, 0x63, 0x75, 0x73, 0x74, 0x6F, 0x6D, 0x73, 0x31, 0x34 };
+        private readonly byte[] _C3v12BadPs3Mask = [0x6c, 0x6c, 0x65, 0x63, 0x74, 0x69, 0x76, 0x65, 0x2d, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x2d, 0x62];
+        private readonly byte[] _C3v13BadPs3Mask = [0xc3, 0xc3, 0xc3, 0xc3, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b];
+        private readonly byte[] _C3v12FixedPs3Mask = [0xf1, 0xb4, 0xb8, 0xb0, 0x48, 0xaf, 0xcb, 0x9b, 0x4b, 0x53, 0xe0, 0x56, 0x64, 0x57, 0x68, 0x39];
+        private readonly byte[] _C3v13FixedPs3Mask = [0xa5, 0xce, 0xfd, 0x06, 0x11, 0x93, 0x23, 0x21, 0xf8, 0x87, 0x85, 0xea, 0x95, 0xe4, 0x94, 0xd4];
+        private readonly byte[] _C3v11Nonce = [0x00, 0x00, 0x00, 0x00, 0x63, 0x33, 0x2d, 0x63, 0x75, 0x73, 0x74, 0x6F, 0x6D, 0x73, 0x31, 0x34];
 
         public uint Version; // read from bytes 0-3 of the header
         public uint OggOffset; // read from bytes 4-7 of the header
@@ -176,23 +177,20 @@ namespace MoggInspectorLib
 
         public byte[] MagicA = new byte[8]; // this is used to xor a specific offset in the decrypted audio as a form of obfuscation
         public byte[] MagicB = new byte[8]; // this is used to xor a different specific offset in the decrypted audio
-        public uint Ps3Index; // this is the key index into the _HiddenKeys array as read from the header, HMX games always take the stored value and modulo 6
+        public uint Ps3Index; // this is the key index into the _HiddenKeys array as read from the header, modulo 6
         public uint XboxIndex; // this is Ps3Index + 6
         public byte[] XboxAesKey = new byte[16]; // this will hold the final derived xbox key
         public byte[] Ps3AesKey = new byte[16]; // this will hold the final derived ps3 key
         public byte[] Nonce = new byte[16]; // normally used as read, this is the IV for the AES CTR encryption so we just document it
         public byte[] Ps3Mask = new byte[16]; // used directly, no encryption
         public byte[] XboxMask = new byte[16]; // as read from the header, this is encrypted with the appropriate _HvKey
+        public byte[] XboxMaskDec = new byte[16]; // decrypted from XboxMask
         public byte[] Ps3GrindArrayResult = new byte[16]; // this is kept so we can xor it with the xbox key to get the correct ps3 keymask
         public byte[] Ps3FixedMask = new byte[16]; // used only when XboxAesKey and Ps3AesKey don't match, is XboxAesKey XOR Ps3GrindArrayResult
         public bool KeymaskMismatch = false; // this will be set to true if the keys don't match, so the caller knows a patch is needed
         public bool IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
 
-        private void GenKeys()
-        {
-
-        }
-        private byte AsciiDigitToHex(byte h)
+        private static byte AsciiDigitToHex(byte h)
         {
             if ((h < 0x61) || (0x66 < h))
                 if ((h < 0x41) || (0x46 < h))
@@ -221,7 +219,7 @@ namespace MoggInspectorLib
             }
             return h;
         }
-        private byte[] HexStringToBytes(byte[] s)
+        private static byte[] HexStringToBytes(byte[] s)
         {
             for (int i = 0; i < 16; i++)
             {
@@ -231,26 +229,26 @@ namespace MoggInspectorLib
             }
             return s;
         }
-        private uint Lcg(uint x)
+        private static uint Lcg(uint x)
         {
             return ((x * 0x19660d) + 0x3c6ef35f) & 0xffffffff;
         }
-        private byte RotL(byte x, byte n)
+        private static byte RotL(byte x, byte n)
         {
             return (byte)((x << (n & 31) | x >> (8 - n & 31)) & 255);
         }
-        private byte RotR(byte x, byte n)
+        private static byte RotR(byte x, byte n)
         {
             return (byte)((x >> (n & 31) | x << (8 - n & 31)) & 255);
         }
-        private byte Onot(byte x)
+        private static byte Onot(byte x)
         {
             if (x == 0)
             { return 1; }
             else
             { return 0; }
         }
-        private byte Op(byte a1, byte a2, byte op)
+        private static byte Op(byte a1, byte a2, byte op)
         {
             byte ret = 0;
             switch (op)
@@ -426,20 +424,79 @@ namespace MoggInspectorLib
         }
         private byte[] GrindArray(byte[] key)
         {
+            int i;
+            uint num;
+            byte[] numArray = new byte[64];
+            byte[] numArray1 = new byte[64];
+            uint magA = BitConverter.ToUInt32(MagicA,0);
+            uint magB = BitConverter.ToUInt32(MagicB,0);
+            int[] numArray2 = new int[256];
+
+            for (i = 0; i < 0x100; i++) // hashTo5Bits? {ma %d 2}
+            {
+                numArray2[i] = (byte)((byte)magA >> 3);
+                magA = Lcg(magA);
+            }
+            if (magB == 0)
+            {
+                magB = 0x303f;
+            }
+
+            for (i = 0; i < 0x20; i++)
+            {
+                do
+                {
+                    magB = Lcg(magB);
+                    num = magB >> 2 & 0x1f;
+                }
+                while (numArray[num] != 0);
+                numArray1[i] = (byte)num;
+                numArray[num] = 1;
+            }
+            int[] numArray3 = numArray2;
+            int[] numArray4 = new int[256];
+            magA = magB;
+            for (i = 0; i < 256; i++)
+            {
+                numArray4[i] = (byte)((byte)magA >> 2 & 0x3f);
+                magA = Lcg(magA);
+            }
+            if (Version > 13)
+            {
+                for (i = 32; i < 64; i++)
+                {
+                    do
+                    {
+                        magA = Lcg(magA);
+                        num = (magA >> 2 & 0x1f) + 0x20;
+                    }
+                    while (numArray[num] != 0);
+                    numArray1[i] = (byte)num;
+                    numArray[num] = 1;
+                }
+                numArray3 = numArray4;
+            }
+            for (int j = 0; j < 16; j++)
+            {
+                byte num3 = key[j];
+                for (int k = 0; k < 16; k += 2)
+                {
+                    num3 = Op(num3, key[k + 1], numArray1[numArray3[key[k]]]);
+                }
+                key[j] = num3;
+            }
             return key;
         }
-        private int Roll(int x)
+        private static int Roll(int x)
         {
             return ((x + 0x13) % 0x20);
         }
 
-        private void Swap(ref byte b1, ref byte b2)
+        private static void Swap(ref byte b1, ref byte b2)
         {
-            byte tmp = b1;
-            b1 = b2;
-            b2 = tmp;
+            (b2, b1) = (b1, b2);
         }
-        private byte[] Shuffle1(byte[] key)
+        private static byte[] Shuffle1(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -450,7 +507,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Shuffle2(byte[] key)
+        private static byte[] Shuffle2(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -459,7 +516,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Shuffle3(byte[] key)
+        private static byte[] Shuffle3(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -469,7 +526,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Shuffle4(byte[] key)
+        private static byte[] Shuffle4(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -479,7 +536,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Shuffle5(byte[] key)
+        private static byte[] Shuffle5(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -489,7 +546,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Shuffle6(byte[] key)
+        private static byte[] Shuffle6(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -499,7 +556,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private byte[] Supershuffle(byte[] key)
+        private static byte[] Supershuffle(byte[] key)
         {
             key = Shuffle1(key);
             key = Shuffle2(key);
@@ -526,29 +583,116 @@ namespace MoggInspectorLib
             key = Mash(key);
             return key;
         }
-        private ulong GetUInt64LE(byte[] bytes, uint offset)
+        private void GenKeys()
         {
-            byte[] temp = new byte[8];
-            temp[0] = bytes[offset];
-            temp[1] = bytes[offset + 1];
-            temp[2] = bytes[offset + 2];
-            temp[3] = bytes[offset + 3];
-            temp[4] = bytes[offset + 4];
-            temp[5] = bytes[offset + 5];
-            temp[6] = bytes[offset + 6];
-            temp[7] = bytes[offset + 7];
+            byte[] selectedKeyXbox = new byte[32];
+            byte[] selectedKeyPs3 = new byte[32];
+            byte[] revealedKeyPs3 = new byte[32];
+            byte[] revealedKeyXbox = new byte[32];
+            byte[] bytesFromHexPs3 = new byte[16];
+            byte[] bytesFromHexXbox = new byte[16];
+            byte[] grindArrayResultPs3 = new byte[16];
+            byte[] grindArrayResultXbox = new byte[16];
+            switch (Version)
+            {
+                case 10:
+                case 11:
+                    {
+                        throw new Exception(string.Format("mogg is v{0}, doesn't use these keys, how did you break my code?", Version));
+                    }
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                    {
+                        Array.Copy(_HiddenKeys, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                        Array.Copy(_HiddenKeys, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                        break;
+                    }
+                case 17:
+                    {
+                        switch (V17Keyset)
+                        {
+                            case 1:
+                                {
+                                    Array.Copy(_HiddenKeys17_1, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                                    Array.Copy(_HiddenKeys17_1, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                                    break;
+                                }
+                            case 4:
+                                {
+                                    Array.Copy(_HiddenKeys17_4, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                                    Array.Copy(_HiddenKeys17_4, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                                    break;
+                                }
+                            case 6:
+                                {
+                                    Array.Copy(_HiddenKeys17_6, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                                    Array.Copy(_HiddenKeys17_6, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                                    break;
+                                }
+                            case 8:
+                                {
+                                    Array.Copy(_HiddenKeys17_8, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                                    Array.Copy(_HiddenKeys17_8, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                                    break;
+                                }
+                            case 10:
+                                {
+                                    Array.Copy(_HiddenKeys17_10, 32 * Ps3Index, selectedKeyPs3, 0, 32);
+                                    Array.Copy(_HiddenKeys17_10, 32 * XboxIndex, selectedKeyXbox, 0, 32);
+                                    break;
+                                }
+                            default:
+                                {
+                                    throw new Exception(string.Format("v17 mogg calls for keyset {0}, send to LocalH pls", V17Keyset));
+                                };
+
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        throw new Exception(string.Format("mogg is marked as v{0}, did Harmonix start using moggs again? send to LocalH pls", Version));
+                    }
+            }
+            
+            revealedKeyPs3 = RevealKey(selectedKeyPs3);
+            revealedKeyXbox = RevealKey(selectedKeyXbox);
+            bytesFromHexPs3 = HexStringToBytes(revealedKeyPs3);
+            bytesFromHexXbox = HexStringToBytes(revealedKeyXbox);
+            grindArrayResultPs3 = GrindArray(bytesFromHexPs3);
+            grindArrayResultXbox = GrindArray(bytesFromHexXbox);
+
+            for (int i = 0; i < 16; i++)
+            {
+                XboxAesKey[i] = (byte)(grindArrayResultPs3[i] ^ Ps3Mask[i]);
+                Ps3AesKey[i] = (byte)(grindArrayResultXbox[i] ^ XboxMask[i]);
+            }
+        }
+
+        private static ulong GetUInt64LE(byte[] bytes, uint offset)
+        {
+            byte[] temp =
+            [
+                bytes[offset],
+                bytes[offset + 1],
+                bytes[offset + 2],
+                bytes[offset + 3],
+                bytes[offset + 4],
+                bytes[offset + 5],
+                bytes[offset + 6],
+                bytes[offset + 7],
+            ];
             if (! BitConverter.IsLittleEndian)
                 Array.Reverse(temp);
             ulong i = BitConverter.ToUInt64(temp, 0);
             return i;
         }
-        private uint GetUInt32LE(byte[] bytes, uint offset)
+        private static uint GetUInt32LE(byte[] bytes, uint offset)
         {
-            byte[] temp = new byte[4];
-            temp[0] = bytes[offset];
-            temp[1] = bytes[offset + 1];
-            temp[2] = bytes[offset + 2];
-            temp[3] = bytes[offset + 3];
+            byte[] temp = [bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]];
             if (! BitConverter.IsLittleEndian)
                 Array.Reverse(temp);
             uint i = BitConverter.ToUInt32(temp, 0);
@@ -645,10 +789,8 @@ namespace MoggInspectorLib
                 {
                     _XboxMaskCipher.Key = HvKey;
                     _XboxMaskCipher.Mode = CipherMode.ECB;
-                    using (ICryptoTransform decryptor = _XboxMaskCipher.CreateDecryptor())
-                    {
-                        XboxMask = decryptor.TransformFinalBlock(XboxMask, 0, XboxMask.Length);
-                    }
+                    using ICryptoTransform decryptor = _XboxMaskCipher.CreateDecryptor();
+                    XboxMaskDec = decryptor.TransformFinalBlock(XboxMask, 0, XboxMask.Length);
                 }
                 if ((Ps3Mask == _C3v12BadPs3Mask) || (Ps3Mask == _C3v13BadPs3Mask))
                 {
@@ -660,7 +802,7 @@ namespace MoggInspectorLib
                     IsC3Mogg = true;
                     KeymaskMismatch = false;
                 }
-                if (Nonce == _C3v11Nonce)
+                if ((Version == 11) && (Nonce == _C3v11Nonce))
                 {
                     IsC3Mogg = true;
                 }
@@ -676,7 +818,7 @@ namespace MoggInspectorLib
             {
                 ReadValues(header, false);
             }
-
+            GenKeys(); // generate Xbox and PS3 keys
         }
     }
 }
