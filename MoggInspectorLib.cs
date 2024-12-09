@@ -806,6 +806,19 @@ namespace MoggInspectorLib
                 {
                     IsC3Mogg = true;
                 }
+                if (Version == 11)
+                {
+                    XboxAesKey = _CtrKey_11;
+                    Ps3AesKey = _CtrKey_11;
+                }
+                if (XboxAesKey != Ps3AesKey)
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        Ps3FixedMask[i] = (byte)(XboxAesKey[i] ^ Ps3GrindArrayResult[i]);
+                    }
+                    KeymaskMismatch = true;
+                }
             }
         }
         public void DeriveKeys(byte[] header, bool red)
