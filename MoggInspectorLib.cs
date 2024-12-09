@@ -190,7 +190,7 @@ namespace MoggInspectorLib
         public bool KeymaskMismatch = false; // this will be set to true if the keys don't match, so the caller knows a patch is needed
         public bool IsC3Mogg = false; // this will be set to true if the appropriate conditions are met for a mogg to be of C3 origin
 
-        private static byte AsciiDigitToHex(byte h)
+        private byte AsciiDigitToHex(byte h)
         {
             if ((h < 0x61) || (0x66 < h))
                 if ((h < 0x41) || (0x46 < h))
@@ -219,7 +219,7 @@ namespace MoggInspectorLib
             }
             return h;
         }
-        private static byte[] HexStringToBytes(byte[] s)
+        private byte[] HexStringToBytes(byte[] s)
         {
             for (int i = 0; i < 16; i++)
             {
@@ -229,26 +229,26 @@ namespace MoggInspectorLib
             }
             return s;
         }
-        private static uint Lcg(uint x)
+        private uint Lcg(uint x)
         {
             return ((x * 0x19660d) + 0x3c6ef35f) & 0xffffffff;
         }
-        private static byte RotL(byte x, byte n)
+        private byte RotL(byte x, byte n)
         {
             return (byte)((x << (n & 31) | x >> (8 - n & 31)) & 255);
         }
-        private static byte RotR(byte x, byte n)
+        private byte RotR(byte x, byte n)
         {
             return (byte)((x >> (n & 31) | x << (8 - n & 31)) & 255);
         }
-        private static byte Onot(byte x)
+        private byte Onot(byte x)
         {
             if (x == 0)
             { return 1; }
             else
             { return 0; }
         }
-        private static byte Op(byte a1, byte a2, byte op)
+        private byte Op(byte a1, byte a2, byte op)
         {
             byte ret = 0;
             switch (op)
@@ -487,16 +487,16 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static int Roll(int x)
+        private int Roll(int x)
         {
             return ((x + 0x13) % 0x20);
         }
 
-        private static void Swap(ref byte b1, ref byte b2)
+        private void Swap(ref byte b1, ref byte b2)
         {
             (b2, b1) = (b1, b2);
         }
-        private static byte[] Shuffle1(byte[] key)
+        private byte[] Shuffle1(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -507,7 +507,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Shuffle2(byte[] key)
+        private byte[] Shuffle2(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -516,7 +516,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Shuffle3(byte[] key)
+        private byte[] Shuffle3(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -526,7 +526,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Shuffle4(byte[] key)
+        private byte[] Shuffle4(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -536,7 +536,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Shuffle5(byte[] key)
+        private byte[] Shuffle5(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -546,7 +546,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Shuffle6(byte[] key)
+        private byte[] Shuffle6(byte[] key)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -556,7 +556,7 @@ namespace MoggInspectorLib
             }
             return key;
         }
-        private static byte[] Supershuffle(byte[] key)
+        private byte[] Supershuffle(byte[] key)
         {
             key = Shuffle1(key);
             key = Shuffle2(key);
@@ -672,7 +672,7 @@ namespace MoggInspectorLib
             }
         }
 
-        private static ulong GetUInt64LE(byte[] bytes, uint offset)
+        private ulong GetUInt64LE(byte[] bytes, uint offset)
         {
             byte[] temp =
             [
@@ -690,7 +690,7 @@ namespace MoggInspectorLib
             ulong i = BitConverter.ToUInt64(temp, 0);
             return i;
         }
-        private static uint GetUInt32LE(byte[] bytes, uint offset)
+        private uint GetUInt32LE(byte[] bytes, uint offset)
         {
             byte[] temp = [bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]];
             if (! BitConverter.IsLittleEndian)
