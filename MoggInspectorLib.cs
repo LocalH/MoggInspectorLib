@@ -1,6 +1,8 @@
 using System;
-/* using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+/* using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -193,31 +195,20 @@ namespace MoggInspectorLib
         private byte AsciiDigitToHex(byte h)
         {
             if ((h < 0x61) || (0x66 < h))
+            {
                 if ((h < 0x41) || (0x46 < h))
                 {
-                    h = (byte)(h - 0x30);
-                    if (h < 0)
-                    {
-                        h = (byte)(h + 0x100);
-                    }
+                    return (byte)(h - 0x30);
                 }
                 else
                 {
-                    h = (byte)(h - 0x37);
-                    if (h < 0)
-                    {
-                        h = (byte)(h + 0x100);
-                    }
-                }
-            else
-            {
-                h = (byte)(h - 0x57);
-                if (h < 0)
-                {
-                    h = (byte)(h + 0x100);
+                    return (byte)(h - 0x37);
                 }
             }
-            return h;
+            else
+            {
+                return (byte)(h + 0xa9);
+            }
         }
         private byte[] HexStringToBytes(byte[] s)
         {
@@ -229,225 +220,798 @@ namespace MoggInspectorLib
             }
             return s;
         }
-        private uint Lcg(uint x)
+        private static uint Lcg(uint x)
         {
             return ((x * 0x19660d) + 0x3c6ef35f) & 0xffffffff;
         }
-        private byte RotL(byte x, byte n)
+        private static byte RotL(byte x, byte n)
         {
             return (byte)((x << (n & 31) | x >> (8 - n & 31)) & 255);
         }
-        private byte RotR(byte x, byte n)
+        private static byte RotR(byte x, byte n)
         {
             return (byte)((x >> (n & 31) | x << (8 - n & 31)) & 255);
         }
-        private byte Onot(byte x)
+        private static byte Onot(byte x)
         {
             if (x == 0)
             { return 1; }
             else
             { return 0; }
         }
-        private byte Op(byte a1, byte a2, byte op)
+/*        private static byte Op(byte a1, byte a2, int op)
         {
-            byte ret = 0;
+            byte num;
+            object obj;
+            int num1 = 0;
+
             switch (op)
             {
                 case 0:
                     {
-                        ret = (byte)(a2 + RotR(a1, Onot(a2)));
+                        num1 = a2 + RotR(a1, (byte)(a2 == 0 ? 1 : 0));
                         break;
                     }
                 case 1:
                     {
-                        ret = (byte)(a2 + RotR(a1, 3));
+                        num1 = a2 + RotR(a1, 3);
                         break;
                     }
                 case 2:
                     {
-                        ret = (byte)(a2 + RotL(a1, 1));
+                        num1 = a2 + RotL(a1, 1);
                         break;
                     }
                 case 3:
                     {
-                        ret = (byte)(a2 ^ (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                        num1 = a2 ^ (a1 >> (a2 & 7 & 31) | (byte)(a1 << (-a2 & 7 & 31)));
                         break;
                     }
                 case 4:
                     {
-                        ret = (byte)(a2 ^ RotL(a1, 4));
+                        num1 = a2 ^ RotL(a1, 4);
                         break;
                     }
                 case 5:
                     {
-                        ret = (byte)(a2 + (a2 ^ RotR(a1, 3)));
+                        num = RotR(a1, 3);
+                        num1 = a2 + (a2 ^ num);
                         break;
                     }
                 case 6:
                     {
-                        ret = (byte)(a2 + RotL(a1, 2));
+                        num1 = a2 + RotL(a1, 2);
                         break;
                     }
                 case 7:
                     {
-                        ret = (byte)(a2 + Onot(a1));
+                        num1 = a2 + (a1 == 0 ? 1 : 0);
                         break;
                     }
                 case 8:
                     {
-                        ret = (byte)(a2 ^ RotR(a1, Onot(a2)));
+                        num1 = a2 ^ RotR(a1, (byte)(a2 == 0 ? 1 : 0));
                         break;
                     }
                 case 9:
                     {
-                        ret = (byte)(a2 ^ (a2 + RotL(a1, 3)));
+                        num = RotL(a1, 3);
+                        num1 = a2 ^ a2 + num;
                         break;
                     }
                 case 10:
                     {
-                        ret = (byte)(a2 + RotL(a1, 3));
+                        num1 = a2 + RotL(a1, 3);
                         break;
                     }
                 case 11:
                     {
-                        ret = (byte)(a2 + RotL(a1, 4));
+                        num1 = a2 + RotL(a1, 4);
                         break;
                     }
                 case 12:
                     {
-                        ret = (byte)(a1 ^ a2);
+                        num1 = a1 ^ a2;
                         break;
                     }
                 case 13:
                     {
-                        ret = (byte)(a2 ^ Onot(a1));
+                        num1 = a2 ^ (a1 == 0 ? 1 : 0);
                         break;
                     }
                 case 14:
                     {
-                        ret = (byte)(a2 ^ (a2 + RotR(a1, 3)));
+                        num = RotR(a1, 3);
+                        num1 = a2 ^ a2 + num;
                         break;
                     }
                 case 15:
                     {
-                        ret = (byte)(a2 ^ RotL(a1, 3));
+                        num1 = a2 ^ RotL(a1, 3);
                         break;
                     }
                 case 16:
                     {
-                        ret = (byte)(a2 ^ RotL(a1, 2));
+                        num1 = a2 ^ RotL(a1, 2);
                         break;
                     }
                 case 17:
                     {
-                        ret = (byte)(a2 + (a2 ^ RotL(a1, 3)));
+                        num = RotL(a1, 3);
+                        num1 = a2 + (a2 ^ num);
                         break;
                     }
                 case 18:
                     {
-                        ret = (byte)(a2 + (a1 ^ a2));
+                        num1 = a2 + (a1 ^ a2);
                         break;
                     }
                 case 19:
                     {
-                        ret = (byte)(a1 + a2);
+                        num1 = a1 + a2;
                         break;
                     }
                 case 20:
                     {
-                        ret = (byte)(a2 ^ RotR(a1, 3));
+                        num1 = a2 ^ RotR(a1, 3);
                         break;
                     }
                 case 21:
                     {
-                        ret = (byte)(a2 ^ (a1 + a2));
+                        num1 = a2 ^ a1 + a2;
                         break;
                     }
                 case 22:
                     {
-                        ret = (byte)(RotR(a1, Onot(a2)));
+                        num1 = RotR(a1, (byte)(a2 == 0 ? 1 : 0));
                         break;
                     }
                 case 23:
                     {
-                        ret = (byte)(a2 + RotR(a1, 1));
+                        num1 = a2 + RotR(a1, 1);
                         break;
                     }
                 case 24:
                     {
-                        ret = (byte)(a1 >> (a2 & 7 & 31) | a1 << (-a2 & 7 & 31));
+                        num1 = a1 >> (a2 & 7 & 31) | a1 << (-a2 & 7 & 31);
                         break;
                     }
                 case 25:
                     {
                         if (a1 == 0)
-                            if (a2 == 0)
-                                ret = 128;
-                            else
-                                ret = 1;
+                        {
+                            obj = (a2 == 0 ? 128 : 1);
+                        }
                         else
-                            ret = 0;
+                        {
+                            obj = 0; // was null as we got it, but caused crashes, setting to 0 fixed
+                        }
+                        num1 = (byte)(int)obj; // num1 is int, but max cast the value of obj to a byte, so I am too
                         break;
                     }
                 case 26:
                     {
-                        ret = (byte)(a2 + RotR(a1, 2));
+                        num1 = a2 + RotR(a1, 2);
                         break;
                     }
                 case 27:
                     {
-                        ret = (byte)(a2 ^ RotR(a1, 1));
+                        num1 = a2 ^ RotR(a1, 1);
                         break;
                     }
                 case 28:
                     {
-                        ret = Op((byte)((~a1)&0xff), a2, 24);
-                        break;
+                        a1 = (byte)(~a1);
+                        goto case 24;
                     }
                 case 29:
                     {
-                        ret = (byte)(a2 ^ RotR(a1, 2));
+                        num1 = a2 ^ RotR(a1, 2);
                         break;
                     }
                 case 30:
                     {
-                        ret = (byte)(a2 + (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                        num1 = a2 + (a1 >> (a2 & 7 & 31) | (byte)(a1 << (-a2 & 7 & 31)));
                         break;
                     }
                 case 31:
                     {
-                        ret = (byte)(a2 ^ RotL(a1, 1));
+                        num1 = a2 ^ RotL(a1, 1);
+                        break;
+                    }
+                case 32:
+                    {
+                        num1 = (byte)((a1 << 8 | 170 | a1 ^ 255) >> 4) ^ a2;
+                        break;
+                    }
+                case 33:
+                    {
+                        num1 = (byte)((a1 ^ 255 | a1 << 8) >> 3 ^ a2);
+                        break;
+                    }
+                case 34:
+                    {
+                        num1 = (byte)((a1 << 8 ^ 65280 | a1) >> 2 ^ a2);
+                        break;
+                    }
+                case 35:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8) >> 5 ^ a2);
+                        break;
+                    }
+                case 36:
+                    {
+                        num1 = (byte)((a1 << 8 | 101 | a1 ^ 60) >> 2 ^ a2);
+                        break;
+                    }
+                case 37:
+                    {
+                        num1 = (byte)((a1 ^ 54 | a1 << 8) >> 2 ^ a2);
+                        break;
+                    }
+                case 38:
+                    {
+                        num1 = (byte)((a1 ^ 54 | a1 << 8) >> 4 ^ a2);
+                        break;
+                    }
+                case 39:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 1 ^ a2);
+                        break;
+                    }
+                case 40:
+                    {
+                        num1 = (byte)((a1 ^ 255 | a1 << 8) >> 5 ^ a2);
+                        break;
+                    }
+                case 41:
+                    {
+                        num1 = (byte)((~a1 << 8 | a1) >> 6 ^ a2);
+                        break;
+                    }
+                case 42:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8) >> 3 ^ a2);
+                        break;
+                    }
+                case 43:
+                    {
+                        num1 = (byte)((a1 ^ 60 | 101 | a1 << 8) >> 5 ^ a2);
+                        break;
+                    }
+                case 44:
+                    {
+                        num1 = (byte)((a1 ^ 54 | a1 << 8) >> 1 ^ a2);
+                        break;
+                    }
+                case 45:
+                    {
+                        num1 = (byte)((a1 ^ 101 | a1 << 8 | 60) >> 6 ^ a2);
+                        break;
+                    }
+                case 46:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8) >> 2 ^ a2);
+                        break;
+                    }
+                case 47:
+                    {
+                        num1 = (byte)((a2 ^ 170 | a2 << 8 | 255) >> 3 ^ a1);
+                        break;
+                    }
+                case 48:
+                    {
+                        num1 = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 6 ^ a2);
+                        break;
+                    }
+                case 49:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 7 ^ a2);
+                        break;
+                    }
+                case 50:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8) >> 6 ^ a2);
+                        break;
+                    }
+                case 51:
+                    {
+                        num1 = (byte)((a1 << 8 ^ 65280 | a1) >> 3 ^ a2);
+                        break;
+                    }
+                case 52:
+                    {
+                        num1 = (byte)((a1 ^ 255 | a1 << 8) >> 6 ^ a2);
+                        break;
+                    }
+                case 53:
+                    {
+                        num1 = (byte)((a1 << 8 ^ 65280 | a1) >> 5 ^ a2);
+                        break;
+                    }
+                case 54:
+                    {
+                        num1 = (byte)((a1 ^ 60 | 101 | a1 << 8) >> 4 ^ a2);
+                        break;
+                    }
+                case 55:
+                    {
+                        num1 = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 3 ^ a2);
+                        break;
+                    }
+                case 56:
+                    {
+                        num1 = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 5 ^ a2);
+                        break;
+                    }
+                case 57:
+                    {
+                        num1 = (byte)((a1 ^ 175 | a1 << 8 | 250) >> 5 ^ a2);
+                        break;
+                    }
+                case 58:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 5 ^ a2);
+                        break;
+                    }
+                case 59:
+                    {
+                        num1 = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 3 ^ a2);
+                        break;
+                    }
+                case 60:
+                    {
+                        num1 = (byte)((a1 ^ 54 | a1 << 8) >> 3 ^ a2);
+                        break;
+                    }
+                case 61:
+                    {
+                        num1 = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 4 ^ a2);
+                        break;
+                    }
+                case 62:
+                    {
+                        num1 = (byte)((a1 ^ 255 | a1 << 8 | 175) >> 6 ^ a2);
+                        break;
+                    }
+                case 63:
+                    {
+                        num1 = (byte)((a1 ^ 255 | a1 << 8) >> 2 ^ a2);
                         break;
                     }
             }
-            return (byte)(ret & 0xff);
-        }
-        private byte[] GrindArray(byte[] key)
+            return (byte)(num1 & 255);
+        }*/
+
+                private static byte Op(byte a1, byte a2, int op)
+                {
+                    byte ret = 0;
+                    switch (op)
+                    {
+                        case 0:
+                            {
+                                ret = (byte)(a2 + RotR(a1, Onot(a2)));
+                                break;
+                            }
+                        case 1:
+                            {
+                                ret = (byte)(a2 + RotR(a1, 3));
+                                break;
+                            }
+                        case 2:
+                            {
+                                ret = (byte)(a2 + RotL(a1, 1));
+                                break;
+                            }
+                        case 3:
+                            {
+                                ret = (byte)(a2 ^ (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                                break;
+                            }
+                        case 4:
+                            {
+                                ret = (byte)(a2 ^ RotL(a1, 4));
+                                break;
+                            }
+                        case 5:
+                            {
+                                ret = (byte)(a2 + (a2 ^ RotR(a1, 3)));
+                                break;
+                            }
+                        case 6:
+                            {
+                                ret = (byte)(a2 + RotL(a1, 2));
+                                break;
+                            }
+                        case 7:
+                            {
+                                ret = (byte)(a2 + Onot(a1));
+                                break;
+                            }
+                        case 8:
+                            {
+                                ret = (byte)(a2 ^ RotR(a1, Onot(a2)));
+                                break;
+                            }
+                        case 9:
+                            {
+                                ret = (byte)(a2 ^ (a2 + RotL(a1, 3)));
+                                break;
+                            }
+                        case 10:
+                            {
+                                ret = (byte)(a2 + RotL(a1, 3));
+                                break;
+                            }
+                        case 11:
+                            {
+                                ret = (byte)(a2 + RotL(a1, 4));
+                                break;
+                            }
+                        case 12:
+                            {
+                                ret = (byte)(a1 ^ a2);
+                                break;
+                            }
+                        case 13:
+                            {
+                                ret = (byte)(a2 ^ Onot(a1));
+                                break;
+                            }
+                        case 14:
+                            {
+                                ret = (byte)(a2 ^ (a2 + RotR(a1, 3)));
+                                break;
+                            }
+                        case 15:
+                            {
+                                ret = (byte)(a2 ^ RotL(a1, 3));
+                                break;
+                            }
+                        case 16:
+                            {
+                                ret = (byte)(a2 ^ RotL(a1, 2));
+                                break;
+                            }
+                        case 17:
+                            {
+                                ret = (byte)(a2 + (a2 ^ RotL(a1, 3)));
+                                break;
+                            }
+                        case 18:
+                            {
+                                ret = (byte)(a2 + (a1 ^ a2));
+                                break;
+                            }
+                        case 19:
+                            {
+                                ret = (byte)(a1 + a2);
+                                break;
+                            }
+                        case 20:
+                            {
+                                ret = (byte)(a2 ^ RotR(a1, 3));
+                                break;
+                            }
+                        case 21:
+                            {
+                                ret = (byte)(a2 ^ (a1 + a2));
+                                break;
+                            }
+                        case 22:
+                            {
+                                ret = (byte)(RotR(a1, Onot(a2)));
+                                break;
+                            }
+                        case 23:
+                            {
+                                ret = (byte)(a2 + RotR(a1, 1));
+                                break;
+                            }
+                        case 24:
+                            {
+                                ret = (byte)(a1 >> (a2 & 7 & 31) | a1 << (-a2 & 7 & 31));
+                                break;
+                            }
+                        case 25:
+                            {
+                                if (a1 == 0)
+                                    if (a2 == 0)
+                                        ret = 128;
+                                    else
+                                        ret = 1;
+                                else
+                                    ret = 0;
+                                break;
+                            }
+                        case 26:
+                            {
+                                ret = (byte)(a2 + RotR(a1, 2));
+                                break;
+                            }
+                        case 27:
+                            {
+                                ret = (byte)(a2 ^ RotR(a1, 1));
+                                break;
+                            }
+                        case 28:
+                            {
+                                ret = Op((byte)((~a1)&0xff), a2, 24);
+                                break;
+                            }
+                        case 29:
+                            {
+                                ret = (byte)(a2 ^ RotR(a1, 2));
+                                break;
+                            }
+                        case 30:
+                            {
+                                ret = (byte)(a2 + (a1 >> (a2 & 7 & 31) | (a1 << (-a2 & 7 & 31))));
+                                break;
+                            }
+                        case 31:
+                            {
+                                ret = (byte)(a2 ^ RotL(a1, 1));
+                                break;
+                            }
+                        case 32:
+                            {
+                                ret = (byte)(((a1 << 8 | 170 | a1 ^ 255) >> 4) ^ a2);
+                                break;
+                            }
+                        case 33:
+                            {
+                                ret = (byte)((a1 ^ 255 | a1 << 8) >> 3 ^ a2);
+                                break;
+                            }
+                        case 34:
+                            {
+                                ret = (byte)((a1 << 8 ^ 65280 | a1) >> 2 ^ a2);
+                                break;
+                            }
+                        case 35:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8) >> 5 ^ a2);
+                                break;
+                            }
+                        case 36:
+                            {
+                                ret = (byte)((a1 << 8 | 101 | a1 ^ 60) >> 2 ^ a2);
+                                break;
+                            }
+                        case 37:
+                            {
+                                ret = (byte)((a1 ^ 54 | a1 << 8) >> 2 ^ a2);
+                                break;
+                            }
+                        case 38:
+                            {
+                                ret = (byte)((a1 ^ 54 | a1 << 8) >> 4 ^ a2);
+                                break;
+                            }
+                        case 39:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 1 ^ a2);
+                                break;
+                            }
+                        case 40:
+                            {
+                                ret = (byte)((a1 ^ 255 | a1 << 8) >> 5 ^ a2);
+                                break;
+                            }
+                        case 41:
+                            {
+                                ret = (byte)((~a1 << 8 | a1) >> 6 ^ a2);
+                                break;
+                            }
+                        case 42:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8) >> 3 ^ a2);
+                                break;
+                            }
+                        case 43:
+                            {
+                                ret = (byte)((a1 ^ 60 | 101 | a1 << 8) >> 5 ^ a2);
+                                break;
+                            }
+                        case 44:
+                            {
+                                ret = (byte)((a1 ^ 54 | a1 << 8) >> 1 ^ a2);
+                                break;
+                            }
+                        case 45:
+                            {
+                                ret = (byte)((a1 ^ 101 | a1 << 8 | 60) >> 6 ^ a2);
+                                break;
+                            }
+                        case 46:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8) >> 2 ^ a2);
+                                break;
+                            }
+                        case 47:
+                            {
+                                ret = (byte)((a2 ^ 170 | a2 << 8 | 255) >> 3 ^ a1);
+                                break;
+                            }
+                        case 48:
+                            {
+                                ret = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 6 ^ a2);
+                                break;
+                            }
+                        case 49:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 7 ^ a2);
+                                break;
+                            }
+                        case 50:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8) >> 6 ^ a2);
+                                break;
+                            }
+                        case 51:
+                            {
+                                ret = (byte)((a1 << 8 ^ 65280 | a1) >> 3 ^ a2);
+                                break;
+                            }
+                        case 52:
+                            {
+                                ret = (byte)((a1 ^ 255 | a1 << 8) >> 6 ^ a2);
+                                break;
+                            }
+                        case 53:
+                            {
+                                ret = (byte)((a1 << 8 ^ 65280 | a1) >> 5 ^ a2);
+                                break;
+                            }
+                        case 54:
+                            {
+                                ret = (byte)((a1 ^ 60 | 101 | a1 << 8) >> 4 ^ a2);
+                                break;
+                            }
+                        case 55:
+                            {
+                                ret = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 3 ^ a2);
+                                break;
+                            }
+                        case 56:
+                            {
+                                ret = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 5 ^ a2);
+                                break;
+                            }
+                        case 57:
+                            {
+                                ret = (byte)((a1 ^ 175 | a1 << 8 | 250) >> 5 ^ a2);
+                                break;
+                            }
+                        case 58:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 5 ^ a2);
+                                break;
+                            }
+                        case 59:
+                            {
+                                ret = (byte)((a1 ^ 92 | a1 << 8 | 54) >> 3 ^ a2);
+                                break;
+                            }
+                        case 60:
+                            {
+                                ret = (byte)((a1 ^ 54 | a1 << 8) >> 3 ^ a2);
+                                break;
+                            }
+                        case 61:
+                            {
+                                ret = (byte)((a1 ^ 99 | a1 << 8 | 92) >> 4 ^ a2);
+                                break;
+                            }
+                        case 62:
+                            {
+                                ret = (byte)((a1 ^ 255 | a1 << 8 | 175) >> 6 ^ a2);
+                                break;
+                            }
+                        case 63:
+                            {
+                                ret = (byte)((a1 ^ 255 | a1 << 8) >> 2 ^ a2);
+                                break;
+                            }
+
+                    }
+                    return (byte)(ret & 0xff);
+                }
+
+                private byte[] GrindArray(byte[] key)
+                {
+                    int i;
+                    uint num;
+                    byte[] numArray = new byte[64];
+                    byte[] numArray1 = new byte[64];
+                    uint magicA = BitConverter.ToUInt32(MagicA, 0);
+                    uint magicB = BitConverter.ToUInt32(MagicB, 0);
+                    uint num1 = magicA;
+                    uint num2 = magicB;
+                    int[] numArray2 = new int[256];
+
+                    for (i = 0; i < 0x100; i++) // hashTo5Bits? {ma %d 2}
+                    {
+                        numArray2[i] = (byte)((byte)magicA >> 3);
+                        magicA = Lcg(magicA);
+                    }
+                    if (magicB == 0)
+                    {
+                        magicB = 0x303f;
+                    }
+
+                    for (i = 0; i < 0x20; i++)
+                    {
+                        do
+                        {
+                            magicB = Lcg(magicB);
+                            num = magicB >> 2 & 0x1f;
+                        }
+                        while (numArray[num] != 0);
+                        numArray1[i] = (byte)num;
+                        numArray[num] = 1;
+                    }
+                    int[] numArray3 = numArray2;
+                    int[] numArray4 = new int[256];
+                    magicA = num2;
+                    for (i = 0; i < 256; i++)
+                    {
+                        numArray4[i] = (byte)((byte)magicA >> 2 & 0x3f);
+                        magicA = Lcg(magicA);
+                    }
+                    if (Version > 13)
+                    {
+                        for (i = 32; i < 64; i++)
+                        {
+                            do
+                            {
+                                num1 = Lcg(num1);
+                                num = (num1 >> 2 & 0x1f) + 0x20;
+                            }
+                            while (numArray[num] != 0);
+                            numArray1[i] = (byte)num;
+                            numArray[num] = 1;
+                        }
+                        numArray3 = numArray4;
+                    }
+                    for (int j = 0; j < 16; j++)
+                    {
+                        byte num3 = key[j];
+                        for (int k = 0; k < 16; k += 2)
+                        {
+                            num3 = Op(num3, key[k + 1], numArray1[numArray3[key[k]]]);
+                        }
+                        key[j] = num3;
+                    }
+                    return key;
+                }
+/*        private static byte[] GrindArray(uint magicA, uint magicB, byte[] key, int version)
         {
             int i;
             uint num;
             byte[] numArray = new byte[64];
             byte[] numArray1 = new byte[64];
-            uint magA = BitConverter.ToUInt32(MagicA,0);
-            uint magB = BitConverter.ToUInt32(MagicB,0);
+            uint num1 = magicA;
+            uint num2 = magicB;
             int[] numArray2 = new int[256];
 
             for (i = 0; i < 0x100; i++) // hashTo5Bits? {ma %d 2}
             {
-                numArray2[i] = (byte)((byte)magA >> 3);
-                magA = Lcg(magA);
+                numArray2[i] = (byte)((byte)magicA >> 3);
+                magicA = 0x19660d * magicA + 0x3c6ef35f;
             }
-            if (magB == 0)
+            if (magicB == 0)
             {
-                magB = 0x303f;
+                magicB = 0x303f;
             }
 
             for (i = 0; i < 0x20; i++)
             {
                 do
                 {
-                    magB = Lcg(magB);
-                    num = magB >> 2 & 0x1f;
+                    magicB = 0x19660d * magicB + 0x3c6ef35f;
+                    num = magicB >> 2 & 0x1f;
                 }
                 while (numArray[num] != 0);
                 numArray1[i] = (byte)num;
@@ -455,20 +1019,20 @@ namespace MoggInspectorLib
             }
             int[] numArray3 = numArray2;
             int[] numArray4 = new int[256];
-            magA = magB;
+            magicA = num2;
             for (i = 0; i < 256; i++)
             {
-                numArray4[i] = (byte)((byte)magA >> 2 & 0x3f);
-                magA = Lcg(magA);
+                numArray4[i] = (byte)((byte)magicA >> 2 & 0x3f);
+                magicA = 0x19660d * magicA + 0x3c6ef35f;
             }
-            if (Version > 13)
+            if (version > 13)
             {
                 for (i = 32; i < 64; i++)
                 {
                     do
                     {
-                        magA = Lcg(magA);
-                        num = (magA >> 2 & 0x1f) + 0x20;
+                        num1 = 0x19660d * num1 + 0x3c6ef35f;
+                        num = (num1 >> 2 & 0x1f) + 0x20;
                     }
                     while (numArray[num] != 0);
                     numArray1[i] = (byte)num;
@@ -486,7 +1050,8 @@ namespace MoggInspectorLib
                 key[j] = num3;
             }
             return key;
-        }
+        }*/
+
         private int Roll(int x)
         {
             return ((x + 0x13) % 0x20);
@@ -501,9 +1066,9 @@ namespace MoggInspectorLib
             for (int i = 0; i < 8; i++)
             {
                 int o = Roll(i << 2);
-                Swap(ref key[o], ref key[(i * 4) + 2]);
+                (key[o], key[(i * 4) + 2]) = (key[(i * 4) + 2], key[o]);
                 o = Roll((i * 4) + 3);
-                Swap(ref key[o], ref key[(i * 4) + 1]);
+                (key[o], key[(i * 4) + 1]) = (key[(i * 4) + 1], key[o]);
             }
             return key;
         }
@@ -511,8 +1076,8 @@ namespace MoggInspectorLib
         {
             for (int i = 0; i < 8; i++)
             {
-                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
-                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+                (key[((7 - i) * 4) + 1], key[(i * 4) + 2]) = (key[(i * 4) + 2],key[((7-i)*4)+1]);
+                (key[(7 - i) * 4], key[(i * 4) + 3]) = (key[(i * 4) + 3], key[(7 - i) * 4]);
             }
             return key;
         }
@@ -521,8 +1086,8 @@ namespace MoggInspectorLib
             for (int i = 0; i < 8; i++)
             {
                 int o = Roll(((7 - i) * 4) + 1);
-                Swap(ref key[o], ref key[(i * 4) + 2]);
-                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+                (key[o], key[(i * 4) + 2]) = (key[(i * 4) + 2], key[o]);
+                (key[(7 - i) * 4], key[(i * 4) + 3]) = (key[(i * 4) + 3], key[(7 - i) * 4]);
             }
             return key;
         }
@@ -530,9 +1095,9 @@ namespace MoggInspectorLib
         {
             for (int i = 0; i < 8; i++)
             {
-                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
+                (key[((7 - i) * 4) + 1], key[(i * 4) + 2]) = (key[(i * 4) + 2], key[((7 - i) * 4) + 1]);
                 int o = Roll((7 - i) * 4);
-                Swap(ref key[o], ref key[(i * 4) + 3]);
+                (key[o], key[(i * 4) + 3]) = (key[(i * 4) + 3], key[o]);
             }
             return key;
         }
@@ -541,8 +1106,8 @@ namespace MoggInspectorLib
             for (int i = 0; i < 8; i++)
             {
                 int o = Roll((i * 4) + 2);
-                Swap(ref key[((7 - i) * 4) + 1], ref key[o]);
-                Swap(ref key[(7 - i) * 4], ref key[(i * 4) + 3]);
+                (key[((7 - i) * 4) + 1], key[o]) = (key[o], key[((7 - i) * 4) + 1]);
+                (key[(7 - i) * 4], key[(i * 4) + 3]) = (key[(i * 4) + 3], key[(7 - i) * 4]);
             }
             return key;
         }
@@ -550,9 +1115,9 @@ namespace MoggInspectorLib
         {
             for (int i = 0; i < 8; i++)
             {
-                Swap(ref key[((7 - i) * 4) + 1], ref key[(i * 4) + 2]);
+                (key[((7 - i) * 4) + 1], key[(i * 4) + 2]) = (key[(i * 4) + 2], key[((7 - i) * 4) + 1]);
                 int o = Roll((i * 4) + 3);
-                Swap(ref key[(7 - i) * 4], ref key[o]);
+                (key[(7 - i) * 4], key[o]) = (key[o], key[(7 - i) * 4]);
             }
             return key;
         }
@@ -644,18 +1209,18 @@ namespace MoggInspectorLib
                                     Array.Copy(_HiddenKeys17_10, 32 * XboxIndex, selectedKeyXbox, 0, 32);
                                     break;
                                 }
-                            default:
-                                {
-                                    throw new Exception(string.Format("v17 mogg calls for keyset {0}, send to LocalH pls", V17Keyset));
-                                };
+                            //default:
+                            //    {
+                            //        throw new Exception(string.Format("v17 mogg calls for keyset {0}, send to LocalH pls", V17Keyset));
+                            //    };
 
                         }
                         break;
                     }
-                default:
-                    {
-                        throw new Exception(string.Format("mogg is marked as v{0}, did Harmonix start using moggs again? send to LocalH pls", Version));
-                    }
+                //default:
+                //    {
+                //        throw new Exception(string.Format("mogg is marked as v{0}, did Harmonix start using moggs again? send to LocalH pls", Version));
+                //    }
             }
 
             if (Version != 11)
@@ -666,17 +1231,20 @@ namespace MoggInspectorLib
                 bytesFromHexXbox = HexStringToBytes(revealedKeyXbox);
                 grindArrayResultPs3 = GrindArray(bytesFromHexPs3);
                 grindArrayResultXbox = GrindArray(bytesFromHexXbox);
+/*                grindArrayResultPs3 = GrindArray(BitConverter.ToUInt32(MagicA,0),BitConverter.ToUInt32(MagicB,0),bytesFromHexPs3,(int)(Version));
+                grindArrayResultXbox = GrindArray(BitConverter.ToUInt32(MagicA, 0), BitConverter.ToUInt32(MagicB, 0), bytesFromHexXbox, (int)(Version));*/
+                Array.Copy(grindArrayResultPs3, Ps3GrindArrayResult, 16);
 
                 for (int i = 0; i < 16; i++)
                 {
-                    XboxAesKey[i] = (byte)(grindArrayResultPs3[i] ^ Ps3Mask[i]);
-                    Ps3AesKey[i] = (byte)(grindArrayResultXbox[i] ^ XboxMask[i]);
+                    XboxAesKey[i] = (byte)(grindArrayResultXbox[i] ^ XboxMaskDec[i]);
+                    Ps3AesKey[i] = (byte)(grindArrayResultPs3[i] ^ Ps3Mask[i]);
                 }
-                if (XboxAesKey != Ps3AesKey)
+                if (!(XboxAesKey.SequenceEqual(Ps3AesKey)))
                 {
                     for (int i = 0; i < 16; i++)
                     {
-                        Ps3FixedMask[i] = (byte)(XboxAesKey[i] ^ Ps3GrindArrayResult[i]);
+                        Ps3FixedMask[i] = (byte)(XboxAesKey[i] ^ grindArrayResultPs3[i]);
                     }
                     KeymaskMismatch = true;
                 }
@@ -684,8 +1252,8 @@ namespace MoggInspectorLib
             }
             else
             {
-                XboxAesKey = _CtrKey_11;
-                Ps3AesKey = _CtrKey_11;
+                Array.Copy(_CtrKey_11, XboxAesKey, 16);
+                Array.Copy(_CtrKey_11, Ps3AesKey, 16);
             }
         }
 
@@ -720,7 +1288,13 @@ namespace MoggInspectorLib
             Version = GetUInt32LE(header, 0);
             OggOffset = GetUInt32LE(header, 4);
             HeaderBlockSize = GetUInt32LE(header, 16);
-            NonceOffset = 20 + (HeaderBlockSize * 8);
+
+            if (Version > 10)
+            {
+                NonceOffset = 20 + (HeaderBlockSize * 8);
+                Array.Copy(header, NonceOffset, Nonce, 0, 16);
+            }
+
             if (Version > 11)
             {
                 MagicAOffset = NonceOffset + 16;
@@ -741,13 +1315,29 @@ namespace MoggInspectorLib
                 XboxIndex = Ps3Index + 6;
             }
 
-            Array.Copy(header, NonceOffset, Nonce, 0, 16);
             if (Version > 11)
             {
                 Array.Copy(header, MagicAOffset, MagicA, 0, 4);
+                //Array.Reverse(MagicA);
                 Array.Copy(header, MagicBOffset, MagicB, 0, 4);
+                //Array.Reverse(MagicB);
                 Array.Copy(header, Ps3MaskOffset, Ps3Mask, 0, 16);
                 Array.Copy(header, XboxMaskOffset, XboxMask, 0, 16);
+            }
+
+            if ((Version == 11) && (Nonce.SequenceEqual(_C3v11Nonce))) 
+            {
+                IsC3Mogg = true;
+            }
+
+            if (((Version == 12) && (Ps3Mask.SequenceEqual(_C3v12BadPs3Mask))) || ((Version == 13) && (Ps3Mask.SequenceEqual(_C3v13BadPs3Mask))))
+            {
+                IsC3Mogg = true;
+            }
+
+            if (((Version == 12) && (Ps3Mask.SequenceEqual(_C3v12FixedPs3Mask))) || ((Version == 13) && (Ps3Mask.SequenceEqual(_C3v13FixedPs3Mask))))
+            {
+                IsC3Mogg = true;
             }
 
             if (Version > 11)
@@ -757,22 +1347,20 @@ namespace MoggInspectorLib
                     switch (Version)
                     {
                         case 12:
-                            HvKey = _HvKey_12_r;
-                            break;
                         case 13:
-                            HvKey = _HvKey_12_r;
+                            Array.Copy(_HvKey_12_r, HvKey, 16);
                             break;
                         case 14:
-                            HvKey = _HvKey_14_r;
+                            Array.Copy(_HvKey_14_r, HvKey, 16);
                             break;
                         case 15:
-                            HvKey = _HvKey_15_r;
+                            Array.Copy(_HvKey_15_r, HvKey, 16);
                             break;
                         case 16:
-                            HvKey = _HvKey_16_r;
+                            Array.Copy(_HvKey_16_r, HvKey, 16);
                             break;
                         case 17:
-                            HvKey = _HvKey_17_r;
+                            Array.Copy(_HvKey_17_r, HvKey, 16);
                             break;
                     }
                 }
@@ -781,26 +1369,23 @@ namespace MoggInspectorLib
                     switch (Version)
                     {
                         case 12:
-                            HvKey = _HvKey_12;
-                            break;
                         case 13:
-                            HvKey = _HvKey_12;
+                            Array.Copy(_HvKey_12, HvKey, 16);
                             break;
                         case 14:
-                            HvKey = _HvKey_14;
+                            Array.Copy(_HvKey_14, HvKey, 16);
                             break;
                         case 15:
-                            HvKey = _HvKey_15;
+                            Array.Copy(_HvKey_15, HvKey, 16);
                             break;
                         case 16:
-                            HvKey = _HvKey_16;
+                            Array.Copy(_HvKey_16, HvKey, 16);
                             break;
                         case 17:
-                            HvKey = _HvKey_17;
+                            Array.Copy(_HvKey_17, HvKey, 16);
                             break;
                     }
                 }
-
 
                 using (Aes _XboxMaskCipher = Aes.Create())
                 {
@@ -810,35 +1395,45 @@ namespace MoggInspectorLib
                     _XboxMaskCipher.Padding = PaddingMode.None;
                     _XboxMaskCipher.Key = HvKey;
                     ICryptoTransform cryptoTransform = _XboxMaskCipher.CreateDecryptor();
-                    XboxMaskDec = cryptoTransform.TransformFinalBlock(XboxMask, 0, XboxMask.Length);
-                }
-                if ((Ps3Mask == _C3v12BadPs3Mask) || (Ps3Mask == _C3v13BadPs3Mask))
-                {
-                    IsC3Mogg = true;
-                    KeymaskMismatch = true;
-                }
-                if ((Ps3Mask == _C3v12FixedPs3Mask) || (Ps3Mask == _C3v13FixedPs3Mask))
-                {
-                    IsC3Mogg = true;
-                    KeymaskMismatch = false;
-                }
-                if ((Version == 11) && (Nonce == _C3v11Nonce))
-                {
-                    IsC3Mogg = true;
+                    cryptoTransform.TransformBlock(XboxMask, 0, XboxMask.Length, XboxMaskDec, 0);
                 }
             }
         }
         public void DeriveKeys(byte[] header, bool red)
         {
-            if (red)
+            Version = 0;
+            OggOffset = 0;
+            HeaderBlockSize = 0;
+            NonceOffset = 0;
+            MagicAOffset = 0;
+            MagicBOffset = 0;
+            Ps3MaskOffset = 0;
+            XboxMaskOffset = 0;
+            Array.Clear(HvKey, 0, 16);
+            KeyIndexOffset = 0;
+            V17KeysetOffset = 0;
+            V17Keyset = 0;
+            Array.Clear(MagicA, 0, 4);
+            Array.Clear(MagicB, 0, 4);
+            Ps3Index = 0;
+            XboxIndex = 0;
+            Array.Clear(XboxAesKey, 0, 16);
+            Array.Clear(Ps3AesKey, 0, 16);
+            Array.Clear(Nonce, 0, 16);
+            Array.Clear(Ps3Mask, 0, 16);
+            Array.Clear(XboxMask, 0, 16);
+            Array.Clear(XboxMaskDec, 0, 16);
+            Array.Clear(Ps3GrindArrayResult, 0, 16);
+            Array.Clear(Ps3FixedMask, 0, 16);
+            KeymaskMismatch = false;
+            IsC3Mogg = false;
+
+
+            ReadValues(header, red);
+            if (Version > 10)
             {
-                ReadValues(header, true);
+                GenKeys(); // generate Xbox and PS3 keys
             }
-            else
-            {
-                ReadValues(header, false);
-            }
-            GenKeys(); // generate Xbox and PS3 keys
         }
     }
 }
