@@ -90,7 +90,7 @@ If `Version` is 12 and `isC3Mogg` is true, then the MOGG is the older style of C
 
 If `Version` is 13 and `isC3Mogg` is true, then the MOGG is the newer style of C3 encryption that is marked v13, and probably the most common.
 
-If `KeymaskMismatch` is true, then call `DeriveKeys` again with the same header, but with the bool set to **false**.
+If `KeymaskMismatch` is true, then call `DeriveKeys` again with the same header, but with the bool set to **true**.
 
 If `KeymaskMismatch` is still true after the second call to `DeriveKeys`, then it's not a red key MOGG and you need to call `DeriveKeys` with the bool set to **false** to ensure the 360-related variables are set up for the green keys, and you can optionally patch the MOGG with the keymask stored in `Ps3FixedMask`.
 
